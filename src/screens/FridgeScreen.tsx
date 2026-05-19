@@ -5,6 +5,7 @@ import { ExpiryAlert } from '@/components/fridge/ExpiryAlert';
 import { IngredientCard } from '@/components/fridge/IngredientCard';
 import { AddIngredientModal } from '@/components/fridge/AddIngredientModal';
 import { useApp } from '@/context/AppContext';
+import { getDaysUntilExpiry } from '@/utils/expiry';
 import type { FridgeItem } from '@/types';
 
 export function FridgeScreen() {
@@ -22,7 +23,9 @@ export function FridgeScreen() {
     });
   }
 
-  const sorted = [...state.fridgeItems].sort((a, b) => a.expire_days - b.expire_days);
+  const sorted = [...state.fridgeItems].sort(
+    (a, b) => getDaysUntilExpiry(a.expire_date) - getDaysUntilExpiry(b.expire_date)
+  );
 
   return (
     <ScreenWrapper title="🧊 스마트 냉장고" subtitle={`총 ${state.fridgeItems.length}가지 식재료 보관 중`}>

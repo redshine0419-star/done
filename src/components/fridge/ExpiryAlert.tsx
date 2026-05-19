@@ -1,4 +1,5 @@
 import type { FridgeItem } from '@/types';
+import { getDaysUntilExpiry } from '@/utils/expiry';
 
 interface Props {
   items: FridgeItem[];
@@ -12,7 +13,11 @@ const EXPIRY_STYLE: Record<number, string> = {
 };
 
 export function ExpiryAlert({ items }: Props) {
-  const urgent = items.filter(i => i.expire_days <= 3).sort((a, b) => a.expire_days - b.expire_days);
+  const urgent = items
+    .map(i => ({ ...i, days: getDaysUntilExpiry(i.expire_date) }))
+    .filter(i => i.days <= 3)
+    .sort((a, b) => a.days - b.days);
+
   if (urgent.length === 0) return null;
 
   return (
@@ -20,8 +25,8 @@ export function ExpiryAlert({ items }: Props) {
       <p className="text-sm font-bold text-red-600 mb-2">⚠️ 유통기한 임박 식재료</p>
       <div className="flex flex-wrap gap-2">
         {urgent.map(item => {
-          const style = EXPIRY_STYLE[item.expire_days] ?? EXPIRY_STYLE[3];
-          const label = item.expire_days === 0 ? 'D-DAY' : `D-${item.expire_days}`;
+          const style = EXPIRY_STYLE[item.days] ?? EXPIRY_STYLE[3];
+          const label = item.days === 0 ? 'D-DAY' : `D-${item.days}`;
           return (
             <span key={item.ingredient_id} className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-bold border ${style}`}>
               {item.icon} {item.name}

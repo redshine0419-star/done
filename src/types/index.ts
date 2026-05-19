@@ -3,7 +3,7 @@ export interface FridgeItem {
   name: string;
   amount: number;
   unit: string;
-  expire_days: number;
+  expire_date: string;   // ISO date "2026-05-21" — replaces expire_days
   icon: string;
   registered_at: string;
 }
@@ -40,13 +40,15 @@ export interface Recipe {
   steps: RecipeStep[];
 }
 
-export type ScreenId = 'fridge' | 'taste' | 'blog' | 'recipes' | 'cook';
+export type ScreenId = 'fridge' | 'taste' | 'blog' | 'recipes' | 'cook' | 'magazine';
 
 export interface CookSession {
   burner1StepIndex: number;
   burner2StepIndex: number;
-  burner1Elapsed: number;
-  burner2Elapsed: number;
+  burner1StepStartMs: number;   // performance.now() 기준
+  burner2StepStartMs: number;
+  pausedAt: number | null;
+  pausedDuration: number;
   isRunning: boolean;
   isComplete: boolean;
 }
@@ -59,3 +61,19 @@ export interface AdjustedIngredient {
 }
 
 export type VoiceCommand = 'next' | 'pause' | 'complete';
+
+export type BlogCategory = '요리팁' | '식재료이야기' | '건강식' | '시즌레시피' | '미각탐구';
+
+export interface BlogPost {
+  id: string;
+  title: string;
+  category: BlogCategory;
+  thumbnail: string;
+  summary: string;
+  body: string;            // 마크다운
+  author: string;
+  published_at: string;
+  tags: string[];
+  readTime: number;
+  related_recipe_id?: string;
+}

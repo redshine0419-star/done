@@ -17,9 +17,7 @@ export function CookScreen() {
 
   useCookTimer();
 
-  // Show complete modal when cooking finishes
-  const wasComplete = cs?.isComplete;
-  if (wasComplete && !showComplete) setShowComplete(true);
+  if (cs?.isComplete && !showComplete) setShowComplete(true);
 
   if (!recipe || !cs) {
     return (
@@ -41,7 +39,6 @@ export function CookScreen() {
 
   const b1Steps = recipe.steps.filter(s => s.burner === 1);
   const b2Steps = recipe.steps.filter(s => s.burner === 2);
-
   const b1Complete = cs.burner1StepIndex >= b1Steps.length;
   const b2Complete = !recipe.isCombo || cs.burner2StepIndex >= b2Steps.length;
 
@@ -50,7 +47,7 @@ export function CookScreen() {
       if (!b1Complete) dispatch({ type: 'ADVANCE_COOK_STEP', payload: { burner: 1 } });
       else if (!b2Complete) dispatch({ type: 'ADVANCE_COOK_STEP', payload: { burner: 2 } });
     } else if (cmd === 'pause') {
-      if (cs) cs.isRunning ? dispatch({ type: 'PAUSE_COOKING' }) : dispatch({ type: 'RESUME_COOKING' });
+      cs!.isRunning ? dispatch({ type: 'PAUSE_COOKING' }) : dispatch({ type: 'RESUME_COOKING' });
     } else if (cmd === 'complete') {
       setShowComplete(true);
     }
@@ -103,7 +100,9 @@ export function CookScreen() {
             burner={1}
             steps={b1Steps}
             currentStepIndex={cs.burner1StepIndex}
-            elapsed={cs.burner1Elapsed}
+            stepStartMs={cs.burner1StepStartMs}
+            pausedDuration={cs.pausedDuration}
+            isRunning={cs.isRunning}
             onNext={() => dispatch({ type: 'ADVANCE_COOK_STEP', payload: { burner: 1 } })}
             isComplete={b1Complete}
           />
@@ -113,7 +112,9 @@ export function CookScreen() {
               burner={2}
               steps={b2Steps}
               currentStepIndex={cs.burner2StepIndex}
-              elapsed={cs.burner2Elapsed}
+              stepStartMs={cs.burner2StepStartMs}
+              pausedDuration={cs.pausedDuration}
+              isRunning={cs.isRunning}
               onNext={() => dispatch({ type: 'ADVANCE_COOK_STEP', payload: { burner: 2 } })}
               isComplete={b2Complete}
             />

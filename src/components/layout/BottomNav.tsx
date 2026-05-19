@@ -16,12 +16,13 @@ export function BottomNav({ active, onNavigate }: Props) {
             <button
               key={id}
               onClick={() => onNavigate(id as ScreenId)}
+              aria-label={label}
               className={`flex-1 flex flex-col items-center justify-center gap-0.5 touch-manipulation transition-colors ${
                 isActive ? 'text-[#FF6B35]' : 'text-gray-400'
               }`}
             >
               <span className="text-xl leading-none">{icon}</span>
-              <span className={`text-[9px] font-semibold leading-none ${isActive ? 'text-[#FF6B35]' : 'text-gray-400'}`}>
+              <span className={`text-[10px] font-semibold leading-none ${isActive ? 'text-[#FF6B35]' : 'text-gray-400'}`}>
                 {label}
               </span>
             </button>

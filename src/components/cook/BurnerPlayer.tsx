@@ -5,26 +5,32 @@ interface Props {
   burner: 1 | 2;
   steps: RecipeStep[];
   currentStepIndex: number;
-  elapsed: number;
+  stepStartMs: number;
+  pausedDuration: number;
+  isRunning: boolean;
   onNext: () => void;
   isComplete: boolean;
 }
 
 function formatTime(sec: number) {
-  const m = Math.floor(sec / 60).toString().padStart(2, '0');
-  const s = (sec % 60).toString().padStart(2, '0');
-  return `${m}:${s}`;
+  const s = Math.max(0, sec);
+  const m = Math.floor(s / 60).toString().padStart(2, '0');
+  const ss = (s % 60).toString().padStart(2, '0');
+  return `${m}:${ss}`;
 }
 
-export function BurnerPlayer({ burner, steps, currentStepIndex, elapsed, onNext, isComplete }: Props) {
+export function BurnerPlayer({ burner, steps, currentStepIndex, stepStartMs, pausedDuration, isRunning, onNext, isComplete }: Props) {
   const isB1 = burner === 1;
   const accent = isB1 ? 'bg-[#FF6B35]' : 'bg-blue-500';
   const accentText = isB1 ? 'text-[#FF6B35]' : 'text-blue-500';
   const burnerLabel = isB1 ? '🔥 1구 화구' : '💧 2구 화구';
 
   const currentStep = steps[currentStepIndex];
-  const remaining = currentStep ? currentStep.duration_sec - elapsed : 0;
-  const progress = currentStep ? (elapsed / currentStep.duration_sec) * 100 : 100;
+  const elapsed = isRunning
+    ? Math.floor((performance.now() - stepStartMs - pausedDuration) / 1000)
+    : 0;
+  const remaining = currentStep ? Math.max(0, currentStep.duration_sec - elapsed) : 0;
+  const progress = currentStep ? Math.min(100, (elapsed / currentStep.duration_sec) * 100) : 100;
 
   return (
     <div className={`rounded-2xl border-2 ${isB1 ? 'border-orange-200' : 'border-blue-200'} bg-white overflow-hidden`}>
@@ -49,10 +55,11 @@ export function BurnerPlayer({ burner, steps, currentStepIndex, elapsed, onNext,
             <p className="text-sm text-gray-500 mt-1">{currentStep.description}</p>
           </div>
 
-          {/* Timer ring */}
           <div className="flex items-center gap-4">
             <div className="relative w-20 h-20 shrink-0">
-              <svg className="w-20 h-20 -rotate-90" viewBox="0 0 80 80">
+              <svg className="w-20 h-20 -rotate-90" viewBox="0 0 80 80"
+                role="progressbar" aria-valuenow={elapsed} aria-valuemax={currentStep.duration_sec}
+                aria-label={`남은 시간 ${formatTime(remaining)}`}>
                 <circle cx="40" cy="40" r="34" fill="none" stroke="#e5e7eb" strokeWidth="6" />
                 <circle
                   cx="40" cy="40" r="34" fill="none"
@@ -60,7 +67,7 @@ export function BurnerPlayer({ burner, steps, currentStepIndex, elapsed, onNext,
                   strokeWidth="6"
                   strokeDasharray={`${2 * Math.PI * 34}`}
                   strokeDashoffset={`${2 * Math.PI * 34 * (1 - progress / 100)}`}
-                  className="transition-all duration-1000"
+                  className="transition-all duration-500"
                   strokeLinecap="round"
                 />
               </svg>

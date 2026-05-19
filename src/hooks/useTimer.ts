@@ -6,18 +6,26 @@ export function useCookTimer() {
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   useEffect(() => {
-    const isRunning = state.cookSession?.isRunning ?? false;
-
-    if (isRunning) {
-      intervalRef.current = setInterval(() => {
-        dispatch({ type: 'TICK_COOK' });
-      }, 1000);
-    } else {
+    const cs = state.cookSession;
+    if (!cs || !cs.isRunning || cs.isComplete) {
       if (intervalRef.current) {
         clearInterval(intervalRef.current);
         intervalRef.current = null;
       }
+      return;
     }
+
+    intervalRef.current = setInterval(() => {
+      const now = performance.now();
+      const pauseOffset = cs.pausedDuration;
+
+      const b1Elapsed = Math.floor((now - cs.burner1StepStartMs - pauseOffset) / 1000);
+      const b2Elapsed = cs.burner2StepStartMs >= 0
+        ? Math.floor((now - cs.burner2StepStartMs - pauseOffset) / 1000)
+        : -1;
+
+      dispatch({ type: 'TICK_COOK', payload: { b1Elapsed: Math.max(0, b1Elapsed), b2Elapsed } });
+    }, 500);
 
     return () => {
       if (intervalRef.current) {
@@ -25,5 +33,5 @@ export function useCookTimer() {
         intervalRef.current = null;
       }
     };
-  }, [state.cookSession?.isRunning, dispatch]);
+  }, [state.cookSession?.isRunning, state.cookSession?.isComplete, dispatch]);
 }

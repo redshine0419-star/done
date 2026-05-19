@@ -1,7 +1,7 @@
 import { createContext, useContext, useReducer, useEffect, type ReactNode } from 'react';
 import type { FridgeItem, TasteProfile, ScreenId, Recipe, CookSession, AdjustedIngredient } from '@/types';
 import { mockFridgeItems } from '@/data/mockFridge';
-import { loadFromLS, saveToLS } from '@/utils/storage';
+import { loadFromLS, saveToLS, migrateFridgeItemsV1 } from '@/utils/storage';
 
 interface AppState {
   fridgeItems: FridgeItem[];
@@ -18,7 +18,7 @@ type AppAction =
   | { type: 'UPDATE_TASTE'; payload: TasteProfile }
   | { type: 'NAVIGATE'; payload: ScreenId }
   | { type: 'START_COOKING'; payload: Recipe }
-  | { type: 'TICK_COOK' }
+  | { type: 'TICK_COOK'; payload: { b1Elapsed: number; b2Elapsed: number } }
   | { type: 'ADVANCE_COOK_STEP'; payload: { burner: 1 | 2 } }
   | { type: 'PAUSE_COOKING' }
   | { type: 'RESUME_COOKING' }
@@ -54,16 +54,18 @@ function reducer(state: AppState, action: AppAction): AppState {
 
     case 'START_COOKING': {
       const recipe = action.payload;
-      const hasCombo = recipe.isCombo;
+      const now = performance.now();
       return {
         ...state,
         activeCookRecipe: recipe,
         activeScreen: 'cook',
         cookSession: {
           burner1StepIndex: 0,
-          burner2StepIndex: hasCombo ? 0 : -1,
-          burner1Elapsed: 0,
-          burner2Elapsed: 0,
+          burner2StepIndex: recipe.isCombo ? 0 : -1,
+          burner1StepStartMs: now,
+          burner2StepStartMs: recipe.isCombo ? now : -1,
+          pausedAt: null,
+          pausedDuration: 0,
           isRunning: true,
           isComplete: false,
         },
@@ -71,35 +73,44 @@ function reducer(state: AppState, action: AppAction): AppState {
     }
 
     case 'TICK_COOK': {
-      if (!state.cookSession || !state.cookSession.isRunning || state.cookSession.isComplete) return state;
       const { cookSession: cs, activeCookRecipe: recipe } = state;
-      if (!recipe) return state;
+      if (!cs || !cs.isRunning || cs.isComplete || !recipe) return state;
 
-      let { burner1StepIndex, burner2StepIndex, burner1Elapsed, burner2Elapsed } = cs;
+      const { b1Elapsed, b2Elapsed } = action.payload;
       const b1Steps = burnerSteps(recipe, 1);
       const b2Steps = burnerSteps(recipe, 2);
 
-      burner1Elapsed += 1;
-      burner2Elapsed += 1;
+      let { burner1StepIndex, burner2StepIndex } = cs;
+      const now = performance.now();
 
-      // Auto-advance burner1
-      if (burner1StepIndex < b1Steps.length && burner1Elapsed >= b1Steps[burner1StepIndex].duration_sec) {
+      // Auto-advance burner 1
+      if (burner1StepIndex < b1Steps.length && b1Elapsed >= b1Steps[burner1StepIndex].duration_sec) {
         burner1StepIndex += 1;
-        burner1Elapsed = 0;
       }
-      // Auto-advance burner2
-      if (burner2StepIndex >= 0 && burner2StepIndex < b2Steps.length && burner2Elapsed >= b2Steps[burner2StepIndex].duration_sec) {
+      // Auto-advance burner 2
+      if (burner2StepIndex >= 0 && burner2StepIndex < b2Steps.length && b2Elapsed >= b2Steps[burner2StepIndex].duration_sec) {
         burner2StepIndex += 1;
-        burner2Elapsed = 0;
       }
 
       const b1Done = burner1StepIndex >= b1Steps.length;
       const b2Done = burner2StepIndex < 0 || burner2StepIndex >= b2Steps.length;
       const isComplete = b1Done && b2Done;
 
+      // Reset step start timestamps on auto-advance
+      const newB1StartMs = burner1StepIndex !== cs.burner1StepIndex ? now : cs.burner1StepStartMs;
+      const newB2StartMs = burner2StepIndex !== cs.burner2StepIndex ? now : cs.burner2StepStartMs;
+
       return {
         ...state,
-        cookSession: { ...cs, burner1StepIndex, burner2StepIndex, burner1Elapsed, burner2Elapsed, isComplete, isRunning: !isComplete },
+        cookSession: {
+          ...cs,
+          burner1StepIndex,
+          burner2StepIndex,
+          burner1StepStartMs: newB1StartMs,
+          burner2StepStartMs: newB2StartMs,
+          isComplete,
+          isRunning: !isComplete,
+        },
       };
     }
 
@@ -109,27 +120,31 @@ function reducer(state: AppState, action: AppAction): AppState {
       const recipe = state.activeCookRecipe;
       const b1Steps = burnerSteps(recipe, 1);
       const b2Steps = burnerSteps(recipe, 2);
+      const now = performance.now();
 
       if (action.payload.burner === 1) {
         const next = Math.min(cs.burner1StepIndex + 1, b1Steps.length);
         const b2Done = cs.burner2StepIndex < 0 || cs.burner2StepIndex >= b2Steps.length;
         const isComplete = next >= b1Steps.length && b2Done;
-        return { ...state, cookSession: { ...cs, burner1StepIndex: next, burner1Elapsed: 0, isComplete, isRunning: !isComplete } };
+        return { ...state, cookSession: { ...cs, burner1StepIndex: next, burner1StepStartMs: now, isComplete, isRunning: !isComplete } };
       } else {
         const next = Math.min(cs.burner2StepIndex + 1, b2Steps.length);
         const b1Done = cs.burner1StepIndex >= b1Steps.length;
         const isComplete = b1Done && next >= b2Steps.length;
-        return { ...state, cookSession: { ...cs, burner2StepIndex: next, burner2Elapsed: 0, isComplete, isRunning: !isComplete } };
+        return { ...state, cookSession: { ...cs, burner2StepIndex: next, burner2StepStartMs: now, isComplete, isRunning: !isComplete } };
       }
     }
 
     case 'PAUSE_COOKING':
       if (!state.cookSession) return state;
-      return { ...state, cookSession: { ...state.cookSession, isRunning: false } };
+      return { ...state, cookSession: { ...state.cookSession, isRunning: false, pausedAt: performance.now() } };
 
-    case 'RESUME_COOKING':
+    case 'RESUME_COOKING': {
       if (!state.cookSession) return state;
-      return { ...state, cookSession: { ...state.cookSession, isRunning: true } };
+      const cs = state.cookSession;
+      const extraPause = cs.pausedAt ? performance.now() - cs.pausedAt : 0;
+      return { ...state, cookSession: { ...cs, isRunning: true, pausedAt: null, pausedDuration: cs.pausedDuration + extraPause } };
+    }
 
     case 'COMPLETE_COOKING':
       if (!state.cookSession) return state;
@@ -146,12 +161,17 @@ function reducer(state: AppState, action: AppAction): AppState {
 const defaultTaste: TasteProfile = { spicy: 2, sweet: 2, salty: 2 };
 
 function initState(): AppState {
+  const rawFridge = loadFromLS<unknown[]>('fs_fridge', []);
+  const fridgeItems = rawFridge.length > 0
+    ? migrateFridgeItemsV1(rawFridge)
+    : mockFridgeItems;
+
   return {
-    fridgeItems: loadFromLS<FridgeItem[]>('fs_fridge', mockFridgeItems),
+    fridgeItems,
     tasteProfile: loadFromLS<TasteProfile>('fs_taste', defaultTaste),
     activeScreen: 'fridge',
-    activeCookRecipe: null,
-    cookSession: null,
+    activeCookRecipe: loadFromLS<Recipe | null>('fs_cook_recipe', null),
+    cookSession: loadFromLS<CookSession | null>('fs_cook_session', null),
   };
 }
 
@@ -167,6 +187,8 @@ export function AppProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => { saveToLS('fs_fridge', state.fridgeItems); }, [state.fridgeItems]);
   useEffect(() => { saveToLS('fs_taste', state.tasteProfile); }, [state.tasteProfile]);
+  useEffect(() => { saveToLS('fs_cook_recipe', state.activeCookRecipe); }, [state.activeCookRecipe]);
+  useEffect(() => { saveToLS('fs_cook_session', state.cookSession); }, [state.cookSession]);
 
   return <AppContext.Provider value={{ state, dispatch }}>{children}</AppContext.Provider>;
 }

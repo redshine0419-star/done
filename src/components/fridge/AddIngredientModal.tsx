@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import type { FridgeItem } from '@/types';
 import { UNITS } from '@/constants/taste';
+import { expireDateFromDays } from '@/utils/expiry';
 
 interface Props {
   isOpen: boolean;
@@ -28,7 +29,13 @@ export function AddIngredientModal({ isOpen, onClose, onAdd }: Props) {
 
   function handleSubmit() {
     if (!name.trim() || !amount) return;
-    onAdd({ name: name.trim(), icon, amount: parseFloat(amount), unit, expire_days: parseInt(expireDays) || 7 });
+    onAdd({
+      name: name.trim(),
+      icon,
+      amount: parseFloat(amount),
+      unit,
+      expire_date: expireDateFromDays(parseInt(expireDays) || 7),
+    });
     setName(''); setAmount(''); setUnit('g'); setExpireDays('7'); setIcon('🥕');
     onClose();
   }

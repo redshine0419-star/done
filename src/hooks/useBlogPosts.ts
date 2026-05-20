@@ -3,22 +3,16 @@ import type { BlogPost, BlogCategory } from '@/types';
 import { fetchPublishedPosts } from '@/services/blogService';
 import { mockBlogPosts } from '@/data/mockBlogPosts';
 
-const USE_MOCK = !import.meta.env.VITE_SUPABASE_URL;
-
 export function useBlogPosts(category: BlogCategory | null, query: string) {
   const [allPosts, setAllPosts] = useState<BlogPost[]>([]);
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const [error] = useState<string | null>(null);
 
   useEffect(() => {
-    if (USE_MOCK) {
-      setAllPosts(mockBlogPosts);
-      return;
-    }
     setLoading(true);
     fetchPublishedPosts()
-      .then(setAllPosts)
-      .catch(e => setError((e as Error).message))
+      .then(posts => setAllPosts(posts.length > 0 ? posts : mockBlogPosts))
+      .catch(() => setAllPosts(mockBlogPosts))
       .finally(() => setLoading(false));
   }, []);
 

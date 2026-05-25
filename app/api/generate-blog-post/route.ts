@@ -99,22 +99,29 @@ async function callGemini(prompt: string): Promise<Record<string, unknown>> {
 }
 
 export async function POST(req: NextRequest) {
-  const adminSecret = req.headers.get('x-admin-secret');
-  const cronAuth = req.headers.get('authorization');
-  const isAdmin = adminSecret === process.env.ADMIN_SECRET;
-  const isCron = cronAuth === `Bearer ${process.env.CRON_SECRET}`;
-
-  if (!isAdmin && !isCron) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-  }
-
-  const body = await req.json() as { recipe?: Recipe };
-  const recipe: Recipe = body.recipe ?? CRON_RECIPES[Math.floor(Math.random() * CRON_RECIPES.length)];
-
   try {
+    const adminSecret = req.headers.get('x-admin-secret');
+    const cronAuth = req.headers.get('authorization');
+    const isAdmin = adminSecret === process.env.ADMIN_SECRET;
+    const isCron = cronAuth === `Bearer ${process.env.CRON_SECRET}`;
+
+    if (!isAdmin && !isCron) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
+    if (!process.env.GEMINI_API_KEY) {
+      return NextResponse.json({ error: 'GEMINI_API_KEY가 설정되지 않았습니다' }, { status: 500 });
+    }
+    if (!process.env.DATABASE_URL) {
+      return NextResponse.json({ error: 'DATABASE_URL이 설정되지 않았습니다' }, { status: 500 });
+    }
+
+    const body = await req.json() as { recipe?: Recipe };
+    const recipe: Recipe = body.recipe ?? CRON_RECIPES[Math.floor(Math.random() * CRON_RECIPES.length)];
+
     const prompt = buildPrompt(recipe);
     const post = await callGemini(prompt);
-    const sql = neon(process.env.DATABASE_URL!);
+    const sql = neon(process.env.DATABASE_URL);
     const rows = await sql`
       INSERT INTO blog_posts (title, category, thumbnail, summary, body, author, tags, read_time, related_recipe_id, status, generated_by)
       VALUES (
@@ -141,12 +148,12 @@ export async function POST(req: NextRequest) {
 
 // Vercel Cron
 export async function GET(req: NextRequest) {
-  const cronAuth = req.headers.get('authorization');
-  if (cronAuth !== `Bearer ${process.env.CRON_SECRET}`) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-  }
-  const recipe = CRON_RECIPES[Math.floor(Math.random() * CRON_RECIPES.length)];
   try {
+    const cronAuth = req.headers.get('authorization');
+    if (cronAuth !== `Bearer ${process.env.CRON_SECRET}`) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+    const recipe = CRON_RECIPES[Math.floor(Math.random() * CRON_RECIPES.length)];
     const prompt = buildPrompt(recipe);
     const post = await callGemini(prompt);
     const sql = neon(process.env.DATABASE_URL!);

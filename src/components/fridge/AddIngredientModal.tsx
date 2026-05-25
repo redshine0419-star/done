@@ -31,8 +31,6 @@ export function AddIngredientModal({ isOpen, onClose, onAdd, editItem, onEdit }:
   const [expireDays, setExpireDays] = useState('7');
   const [errors, setErrors]         = useState<Record<string, string>>({});
 
-  // 수정 모드 진입 시 기존 값 채우기
-  // eslint-disable-next-line react-hooks/set-state-in-effect
   useEffect(() => {
     if (editItem) {
       setName(editItem.name);

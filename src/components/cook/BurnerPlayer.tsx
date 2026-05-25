@@ -27,9 +27,7 @@ export function BurnerPlayer({ burner, steps, currentStepIndex, stepStartMs, pau
   const burnerLabel = isB1 ? '🔥 1구 화구' : '💧 2구 화구';
 
   const currentStep = steps[currentStepIndex];
-  // eslint-disable-next-line react-hooks/exhaustive-deps
   const elapsed = isRunning
-    // eslint-disable-next-line @typescript-eslint/no-unsafe-call
     ? Math.floor((performance.now() - stepStartMs - pausedDuration) / 1000)
     : 0;
   const remaining = currentStep ? Math.max(0, currentStep.duration_sec - elapsed) : 0;

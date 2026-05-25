@@ -6,8 +6,6 @@ import { CategoryFilterChips } from '@/components/magazine/CategoryFilterChips';
 import { useBlogPosts } from '@/hooks/useBlogPosts';
 import type { BlogCategory, BlogPost } from '@/types';
 
-import type { Metadata } from 'next';
-
 function BlogCard({ post }: { post: BlogPost }) {
   return (
     <Link href={`/blog/${post.id}`} className="block">

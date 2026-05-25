@@ -1,139 +1,138 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"
+        xmlns:news="http://www.google.com/schemas/sitemap-news/0.9"
+        xmlns:xhtml="http://www.w3.org/1999/xhtml">
 
-  <!-- 메인 화면 -->
   <url>
     <loc>https://done-six-omega.vercel.app/</loc>
     <changefreq>weekly</changefreq>
     <priority>1.0</priority>
   </url>
 
-  <!-- 레시피 화면 -->
   <url>
-    <loc>https://done-six-omega.vercel.app/?screen=recipes</loc>
+    <loc>https://done-six-omega.vercel.app/recipe</loc>
     <changefreq>weekly</changefreq>
     <priority>0.9</priority>
   </url>
 
-  <!-- 매거진 화면 -->
   <url>
-    <loc>https://done-six-omega.vercel.app/?screen=magazine</loc>
+    <loc>https://done-six-omega.vercel.app/blog</loc>
     <changefreq>weekly</changefreq>
     <priority>0.9</priority>
   </url>
 
-  <!-- 개별 레시피 -->
+  <!-- 개별 레시피 페이지 (SSR + Schema.org) -->
   <url>
-    <loc>https://done-six-omega.vercel.app/?screen=recipes&amp;recipe=r1</loc>
+    <loc>https://done-six-omega.vercel.app/recipe/r1</loc>
     <changefreq>monthly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://done-six-omega.vercel.app/?screen=recipes&amp;recipe=r2</loc>
+    <loc>https://done-six-omega.vercel.app/recipe/r2</loc>
     <changefreq>monthly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://done-six-omega.vercel.app/?screen=recipes&amp;recipe=r3</loc>
+    <loc>https://done-six-omega.vercel.app/recipe/r3</loc>
     <changefreq>monthly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://done-six-omega.vercel.app/?screen=recipes&amp;recipe=r4</loc>
+    <loc>https://done-six-omega.vercel.app/recipe/r4</loc>
     <changefreq>monthly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://done-six-omega.vercel.app/?screen=recipes&amp;recipe=r5</loc>
+    <loc>https://done-six-omega.vercel.app/recipe/r5</loc>
     <changefreq>monthly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://done-six-omega.vercel.app/?screen=recipes&amp;recipe=r6</loc>
+    <loc>https://done-six-omega.vercel.app/recipe/r6</loc>
     <changefreq>monthly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://done-six-omega.vercel.app/?screen=recipes&amp;recipe=r7</loc>
+    <loc>https://done-six-omega.vercel.app/recipe/r7</loc>
     <changefreq>monthly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://done-six-omega.vercel.app/?screen=recipes&amp;recipe=r8</loc>
+    <loc>https://done-six-omega.vercel.app/recipe/r8</loc>
     <changefreq>monthly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://done-six-omega.vercel.app/?screen=recipes&amp;recipe=r9</loc>
+    <loc>https://done-six-omega.vercel.app/recipe/r9</loc>
     <changefreq>monthly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://done-six-omega.vercel.app/?screen=recipes&amp;recipe=r10</loc>
+    <loc>https://done-six-omega.vercel.app/recipe/r10</loc>
     <changefreq>monthly</changefreq>
     <priority>0.8</priority>
   </url>
 
-  <!-- 개별 매거진 포스트 -->
+  <!-- 개별 블로그 포스트 -->
   <url>
-    <loc>https://done-six-omega.vercel.app/?screen=magazine&amp;post=bp1</loc>
+    <loc>https://done-six-omega.vercel.app/blog/bp1</loc>
     <changefreq>monthly</changefreq>
-    <priority>0.8</priority>
+    <priority>0.7</priority>
   </url>
   <url>
-    <loc>https://done-six-omega.vercel.app/?screen=magazine&amp;post=bp2</loc>
+    <loc>https://done-six-omega.vercel.app/blog/bp2</loc>
     <changefreq>monthly</changefreq>
-    <priority>0.8</priority>
+    <priority>0.7</priority>
   </url>
   <url>
-    <loc>https://done-six-omega.vercel.app/?screen=magazine&amp;post=bp3</loc>
+    <loc>https://done-six-omega.vercel.app/blog/bp3</loc>
     <changefreq>monthly</changefreq>
-    <priority>0.8</priority>
+    <priority>0.7</priority>
   </url>
   <url>
-    <loc>https://done-six-omega.vercel.app/?screen=magazine&amp;post=bp4</loc>
+    <loc>https://done-six-omega.vercel.app/blog/bp4</loc>
     <changefreq>monthly</changefreq>
-    <priority>0.8</priority>
+    <priority>0.7</priority>
   </url>
   <url>
-    <loc>https://done-six-omega.vercel.app/?screen=magazine&amp;post=bp5</loc>
+    <loc>https://done-six-omega.vercel.app/blog/bp5</loc>
     <changefreq>monthly</changefreq>
-    <priority>0.8</priority>
+    <priority>0.7</priority>
   </url>
   <url>
-    <loc>https://done-six-omega.vercel.app/?screen=magazine&amp;post=bp6</loc>
+    <loc>https://done-six-omega.vercel.app/blog/bp6</loc>
     <changefreq>monthly</changefreq>
-    <priority>0.8</priority>
+    <priority>0.7</priority>
   </url>
   <url>
-    <loc>https://done-six-omega.vercel.app/?screen=magazine&amp;post=bp7</loc>
+    <loc>https://done-six-omega.vercel.app/blog/bp7</loc>
     <changefreq>monthly</changefreq>
-    <priority>0.8</priority>
+    <priority>0.7</priority>
   </url>
   <url>
-    <loc>https://done-six-omega.vercel.app/?screen=magazine&amp;post=bp8</loc>
+    <loc>https://done-six-omega.vercel.app/blog/bp8</loc>
     <changefreq>monthly</changefreq>
-    <priority>0.8</priority>
+    <priority>0.7</priority>
   </url>
   <url>
-    <loc>https://done-six-omega.vercel.app/?screen=magazine&amp;post=bp9</loc>
+    <loc>https://done-six-omega.vercel.app/blog/bp9</loc>
     <changefreq>monthly</changefreq>
-    <priority>0.8</priority>
+    <priority>0.7</priority>
   </url>
   <url>
-    <loc>https://done-six-omega.vercel.app/?screen=magazine&amp;post=bp10</loc>
+    <loc>https://done-six-omega.vercel.app/blog/bp10</loc>
     <changefreq>monthly</changefreq>
-    <priority>0.8</priority>
+    <priority>0.7</priority>
   </url>
   <url>
-    <loc>https://done-six-omega.vercel.app/?screen=magazine&amp;post=bp11</loc>
+    <loc>https://done-six-omega.vercel.app/blog/bp11</loc>
     <changefreq>monthly</changefreq>
-    <priority>0.8</priority>
+    <priority>0.7</priority>
   </url>
   <url>
-    <loc>https://done-six-omega.vercel.app/?screen=magazine&amp;post=bp12</loc>
+    <loc>https://done-six-omega.vercel.app/blog/bp12</loc>
     <changefreq>monthly</changefreq>
-    <priority>0.8</priority>
+    <priority>0.7</priority>
   </url>
 
 </urlset>

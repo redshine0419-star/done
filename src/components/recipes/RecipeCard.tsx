@@ -1,5 +1,6 @@
 'use client';
 import { useState } from 'react';
+import Link from 'next/link';
 import type { Recipe, FridgeItem } from '@/types';
 
 interface Props {
@@ -80,7 +81,16 @@ export function RecipeCard({ recipe, fridgeItems, onStart }: Props) {
               {Math.round(parallel / 60)}분
             </span>
           </div>
-          <h3 className="font-bold text-gray-900 text-sm truncate">{recipe.title}</h3>
+          <div className="flex items-center gap-1">
+            <h3 className="font-bold text-gray-900 text-sm truncate">{recipe.title}</h3>
+            <Link
+              href={`/recipe/${recipe.id}`}
+              onClick={e => e.stopPropagation()}
+              className="text-[10px] text-orange-400 shrink-0 hover:underline"
+            >
+              상세 ›
+            </Link>
+          </div>
           <p className="text-xs text-gray-400 mt-0.5">{recipe.servings}인분</p>
         </div>
 

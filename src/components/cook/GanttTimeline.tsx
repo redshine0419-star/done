@@ -1,3 +1,4 @@
+'use client';
 import type { Recipe } from '@/types';
 
 interface Props {

@@ -1,3 +1,4 @@
+'use client';
 import { TASTE_LABELS } from '@/constants/taste';
 
 interface Props {

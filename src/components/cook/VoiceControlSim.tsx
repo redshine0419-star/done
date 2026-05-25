@@ -1,3 +1,4 @@
+'use client';
 import { useState } from 'react';
 import type { VoiceCommand } from '@/types';
 import { simulateVoiceRecognition } from '@/utils/speechSim';

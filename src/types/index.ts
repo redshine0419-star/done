@@ -40,8 +40,6 @@ export interface Recipe {
   steps: RecipeStep[];
 }
 
-export type ScreenId = 'fridge' | 'taste' | 'blog' | 'recipes' | 'cook' | 'magazine';
-
 export interface CookSession {
   burner1StepIndex: number;
   burner2StepIndex: number;

@@ -1,3 +1,4 @@
+'use client';
 import type { FridgeItem } from '@/types';
 import { getDaysUntilExpiry } from '@/utils/expiry';
 

@@ -5,11 +5,10 @@ import { mockBlogPosts } from '@/data/mockBlogPosts';
 
 export function useBlogPosts(category: BlogCategory | null, query: string) {
   const [allPosts, setAllPosts] = useState<BlogPost[]>([]);
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(true);
   const [error] = useState<string | null>(null);
 
   useEffect(() => {
-    setLoading(true);
     fetchPublishedPosts()
       .then(posts => setAllPosts(posts.length > 0 ? posts : mockBlogPosts))
       .catch(() => setAllPosts(mockBlogPosts))

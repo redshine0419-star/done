@@ -1,3 +1,4 @@
+'use client';
 import type { TasteProfile } from '@/types';
 import { adjustedAmount, dominantTasteLevel } from '@/utils/tasteMatrix';
 

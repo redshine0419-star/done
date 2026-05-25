@@ -1,3 +1,4 @@
+'use client';
 import type { BlogCategory } from '@/types';
 
 const CATEGORIES: BlogCategory[] = ['요리팁', '식재료이야기', '건강식', '시즌레시피', '미각탐구'];

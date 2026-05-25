@@ -1,3 +1,4 @@
+'use client';
 import type { BlogPost } from '@/types';
 import { mockRecipes } from '@/data/mockRecipes';
 

@@ -1,4 +1,6 @@
+'use client';
 import { useState } from 'react';
+import { useRouter } from 'next/navigation';
 import { ScreenWrapper } from '@/components/layout/ScreenWrapper';
 import { WakeLockToggle } from '@/components/cook/WakeLockToggle';
 import { BurnerPlayer } from '@/components/cook/BurnerPlayer';
@@ -14,6 +16,7 @@ export function CookScreen() {
   const { state, dispatch } = useApp();
   const { activeCookRecipe: recipe, cookSession: cs, tasteProfile } = state;
   const [showComplete, setShowComplete] = useState(false);
+  const router = useRouter();
 
   useCookTimer();
 
@@ -25,12 +28,12 @@ export function CookScreen() {
         <div className="flex flex-col items-center justify-center h-64 text-gray-400 space-y-3">
           <p className="text-5xl">🍽️</p>
           <p className="font-semibold text-gray-600">조리할 레시피를 선택해 주세요</p>
-          <p className="text-sm">블로그 또는 코스싱크 탭에서 레시피를 선택하세요</p>
+          <p className="text-sm">레시피 탭에서 레시피를 선택하세요</p>
           <button
-            onClick={() => dispatch({ type: 'NAVIGATE', payload: 'blog' })}
+            onClick={() => router.push('/recipe')}
             className="mt-2 px-6 py-3 rounded-2xl bg-[#FF6B35] text-white font-bold touch-manipulation"
           >
-            블로그로 이동
+            레시피 보러 가기
           </button>
         </div>
       </ScreenWrapper>
@@ -72,6 +75,7 @@ export function CookScreen() {
     dispatch({ type: 'DEDUCT_INGREDIENTS', payload: buildAdjustedIngredients() });
     dispatch({ type: 'RESET_COOKING' });
     setShowComplete(false);
+    router.push('/recipe');
   }
 
   return (
@@ -88,7 +92,7 @@ export function CookScreen() {
                 {cs.isRunning ? '⏸ 일시정지' : '▶ 재개'}
               </button>
               <button
-                onClick={() => { dispatch({ type: 'RESET_COOKING' }); setShowComplete(false); }}
+                onClick={() => { dispatch({ type: 'RESET_COOKING' }); setShowComplete(false); router.push('/recipe'); }}
                 className="px-4 py-2 rounded-full bg-gray-100 text-gray-500 text-sm font-semibold touch-manipulation"
               >
                 ✕ 종료

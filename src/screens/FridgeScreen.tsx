@@ -1,3 +1,4 @@
+'use client';
 import { useState } from 'react';
 import { ScreenWrapper } from '@/components/layout/ScreenWrapper';
 import { OcrBanner } from '@/components/fridge/OcrBanner';

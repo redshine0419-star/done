@@ -1,8 +1,9 @@
+'use client';
 import { useState } from 'react';
 import { mockRecipes } from '@/data/mockRecipes';
 import type { BlogPost, Recipe } from '@/types';
 
-const ADMIN_SECRET = import.meta.env.VITE_ADMIN_SECRET as string | undefined;
+const ADMIN_SECRET = process.env.NEXT_PUBLIC_ADMIN_SECRET;
 
 export function AdminScreen() {
   const [generating, setGenerating] = useState<string | null>(null);

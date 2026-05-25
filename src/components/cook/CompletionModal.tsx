@@ -1,3 +1,4 @@
+'use client';
 import type { AdjustedIngredient } from '@/types';
 
 interface Props {

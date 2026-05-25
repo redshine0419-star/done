@@ -20,9 +20,10 @@ export function saveToLS<T>(key: string, value: T): void {
 
 // 구버전 expire_days(number) → expire_date(ISO string) 마이그레이션
 export function migrateFridgeItemsV1(items: unknown[]): FridgeItem[] {
-  return (items as any[]).map(item => {
-    if ('expire_days' in item && !('expire_date' in item)) {
-      const { expire_days, ...rest } = item;
+  return (items as unknown[]).map(item => {
+    const obj = item as Record<string, unknown>;
+    if ('expire_days' in obj && !('expire_date' in obj)) {
+      const { expire_days, ...rest } = obj;
       return { ...rest, expire_date: expireDateFromDays(expire_days as number) } as FridgeItem;
     }
     return item as FridgeItem;

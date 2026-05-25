@@ -1,4 +1,6 @@
+'use client';
 import { useMemo } from 'react';
+import { useRouter } from 'next/navigation';
 import { ScreenWrapper } from '@/components/layout/ScreenWrapper';
 import { RecipeCard } from '@/components/recipes/RecipeCard';
 import { useApp } from '@/context/AppContext';
@@ -15,6 +17,7 @@ function getMatchRate(recipe: Recipe, fridgeItems: FridgeItem[]): number {
 export function RecipesScreen() {
   const { state, dispatch } = useApp();
   const { fridgeItems } = state;
+  const router = useRouter();
 
   const sorted = useMemo(
     () => [...mockRecipes].sort((a, b) => getMatchRate(b, fridgeItems) - getMatchRate(a, fridgeItems)),
@@ -25,6 +28,7 @@ export function RecipesScreen() {
 
   function handleStart(recipe: Recipe) {
     dispatch({ type: 'START_COOKING', payload: recipe });
+    router.push('/cook');
   }
 
   return (
@@ -41,7 +45,7 @@ export function RecipesScreen() {
               <p className="text-sm font-bold text-orange-800">냉장고 재료를 먼저 등록해 보세요</p>
               <p className="text-xs text-orange-600 mt-1">재료를 등록하면 지금 당장 만들 수 있는 레시피를 % 기준으로 추천해 드립니다.</p>
               <button
-                onClick={() => dispatch({ type: 'NAVIGATE', payload: 'fridge' })}
+                onClick={() => router.push('/fridge')}
                 className="mt-2 text-xs font-bold text-orange-700 underline touch-manipulation"
               >
                 냉장고 탭으로 이동 →

@@ -1,3 +1,4 @@
+'use client';
 import type { RecipeStep } from '@/types';
 
 interface Props {

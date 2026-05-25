@@ -1,12 +1,12 @@
+'use client';
 import { createContext, useContext, useReducer, useEffect, type ReactNode } from 'react';
-import type { FridgeItem, TasteProfile, ScreenId, Recipe, CookSession, AdjustedIngredient } from '@/types';
+import type { FridgeItem, TasteProfile, Recipe, CookSession, AdjustedIngredient } from '@/types';
 import { mockFridgeItems } from '@/data/mockFridge';
 import { loadFromLS, saveToLS, migrateFridgeItemsV1 } from '@/utils/storage';
 
 interface AppState {
   fridgeItems: FridgeItem[];
   tasteProfile: TasteProfile;
-  activeScreen: ScreenId;
   activeCookRecipe: Recipe | null;
   cookSession: CookSession | null;
 }
@@ -18,7 +18,6 @@ type AppAction =
   | { type: 'LOAD_SAMPLE_DATA' }
   | { type: 'DEDUCT_INGREDIENTS'; payload: AdjustedIngredient[] }
   | { type: 'UPDATE_TASTE'; payload: TasteProfile }
-  | { type: 'NAVIGATE'; payload: ScreenId }
   | { type: 'START_COOKING'; payload: Recipe }
   | { type: 'TICK_COOK'; payload: { b1Elapsed: number; b2Elapsed: number } }
   | { type: 'ADVANCE_COOK_STEP'; payload: { burner: 1 | 2 } }
@@ -57,16 +56,12 @@ function reducer(state: AppState, action: AppAction): AppState {
     case 'UPDATE_TASTE':
       return { ...state, tasteProfile: action.payload };
 
-    case 'NAVIGATE':
-      return { ...state, activeScreen: action.payload };
-
     case 'START_COOKING': {
       const recipe = action.payload;
       const now = performance.now();
       return {
         ...state,
         activeCookRecipe: recipe,
-        activeScreen: 'cook',
         cookSession: {
           burner1StepIndex: 0,
           burner2StepIndex: recipe.isCombo ? 0 : -1,
@@ -159,7 +154,7 @@ function reducer(state: AppState, action: AppAction): AppState {
       return { ...state, cookSession: { ...state.cookSession, isComplete: true, isRunning: false } };
 
     case 'RESET_COOKING':
-      return { ...state, activeCookRecipe: null, cookSession: null, activeScreen: 'blog' };
+      return { ...state, activeCookRecipe: null, cookSession: null };
 
     default:
       return state;
@@ -177,7 +172,6 @@ function initState(): AppState {
   return {
     fridgeItems,
     tasteProfile: loadFromLS<TasteProfile>('fs_taste', defaultTaste),
-    activeScreen: 'fridge',
     activeCookRecipe: loadFromLS<Recipe | null>('fs_cook_recipe', null),
     cookSession: loadFromLS<CookSession | null>('fs_cook_session', null),
   };

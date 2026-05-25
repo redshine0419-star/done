@@ -1,3 +1,4 @@
+'use client';
 import { ScreenWrapper } from '@/components/layout/ScreenWrapper';
 import { TasteSlider } from '@/components/taste/TasteSlider';
 import { GValuePreview } from '@/components/taste/GValuePreview';

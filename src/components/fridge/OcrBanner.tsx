@@ -1,3 +1,4 @@
+'use client';
 import { useRef, useState } from 'react';
 import { useApp } from '@/context/AppContext';
 import { OcrReviewModal } from '@/components/fridge/OcrReviewModal';

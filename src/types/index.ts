@@ -39,6 +39,9 @@ export interface Recipe {
   ingredients: RecipeIngredient[];
   steps: RecipeStep[];
   youtube_id?: string;
+  youtube_credit?: string;        // "채널명" 출처 표기
+  related_single_ids?: string[];  // combo: 구성 단품 레시피 ID 목록
+  parent_combo_id?: string;       // 단품: 포함된 combo 레시피 ID
 }
 
 export interface CookSession {

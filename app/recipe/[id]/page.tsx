@@ -1,9 +1,10 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
-import { ArrowLeft, Clock, Users, Zap, PlayCircle } from 'lucide-react';
+import { ArrowLeft, Clock, Users, Zap, PlayCircle, ExternalLink } from 'lucide-react';
 import { mockRecipes } from '@/data/mockRecipes';
 import { StartCookingButton } from './StartCookingButton';
+import { ServingsScaler } from '@/components/recipe/ServingsScaler';
 
 type Params = { id: string };
 
@@ -43,8 +44,15 @@ export default async function RecipeDetailPage({ params }: { params: Promise<Par
   const parallelMin = Math.round(Math.max(b1Total, b2Total || 0) / 60);
   const sequentialMin = Math.round((b1Total + b2Total) / 60);
 
-  const mainIngredients = recipe.ingredients.filter(i => i.type === 'main');
-  const seasonings = recipe.ingredients.filter(i => i.type === 'seasoning');
+  // Resolve sub-recipe titles for combo links
+  const relatedSingles = recipe.related_single_ids
+    ? recipe.related_single_ids.map(rid => mockRecipes.find(r => r.id === rid)).filter(Boolean)
+    : [];
+
+  // Resolve parent combo for single recipes
+  const parentCombo = recipe.parent_combo_id
+    ? mockRecipes.find(r => r.id === recipe.parent_combo_id)
+    : null;
 
   const schemaOrg = {
     '@context': 'https://schema.org/',
@@ -106,8 +114,8 @@ export default async function RecipeDetailPage({ params }: { params: Promise<Par
             </div>
             <div className="py-4 text-center" style={{ background: 'rgba(255,255,255,0.45)' }}>
               <Users size={13} color="var(--text-3)" strokeWidth={2} className="mx-auto mb-1" />
-              <p className="font-black text-[22px]" style={{ color: 'var(--text-1)' }}>{recipe.ingredients.length}</p>
-              <p className="text-[11px] font-medium" style={{ color: 'var(--text-3)' }}>가지 재료</p>
+              <p className="font-black text-[22px]" style={{ color: 'var(--text-1)' }}>{recipe.servings}</p>
+              <p className="text-[11px] font-medium" style={{ color: 'var(--text-3)' }}>인분</p>
             </div>
             {recipe.isCombo && (
               <div className="py-4 text-center" style={{ background: 'rgba(255,255,255,0.65)' }}>
@@ -121,6 +129,22 @@ export default async function RecipeDetailPage({ params }: { params: Promise<Par
           </div>
         </div>
 
+        {/* Parent combo notice */}
+        {parentCombo && (
+          <div className="rounded-2xl px-4 py-3 flex items-center justify-between"
+               style={{ background: '#F5F2FF', border: '1px solid #D9CFFF' }}>
+            <div>
+              <p className="text-[12px] font-bold" style={{ color: '#6B3FD4' }}>2구 코스에 포함된 레시피</p>
+              <p className="text-[13px] mt-0.5" style={{ color: '#8B6FD4' }}>{parentCombo.title} 코스의 구성 요리</p>
+            </div>
+            <Link href={`/recipe/${parentCombo.id}`}
+                  className="flex items-center gap-1 px-3 py-1.5 rounded-xl text-[12px] font-bold touch-manipulation"
+                  style={{ background: '#6B3FD4', color: 'white' }}>
+              코스 보기
+            </Link>
+          </div>
+        )}
+
         {/* Story */}
         <p className="text-[14px] leading-[1.8]" style={{ color: 'var(--text-2)' }}>{recipe.story}</p>
 
@@ -128,14 +152,24 @@ export default async function RecipeDetailPage({ params }: { params: Promise<Par
         <section>
           <h2 className="text-[17px] font-black mb-3" style={{ color: 'var(--text-1)' }}>조리 영상</h2>
           {recipe.youtube_id ? (
-            <div className="relative w-full rounded-2xl overflow-hidden" style={{ paddingBottom: '56.25%', background: '#000' }}>
-              <iframe
-                src={`https://www.youtube.com/embed/${recipe.youtube_id}?rel=0`}
-                className="absolute inset-0 w-full h-full"
-                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                allowFullScreen
-                title={`${recipe.title} 조리 영상`}
-              />
+            <div className="space-y-2">
+              <div className="relative w-full rounded-2xl overflow-hidden" style={{ paddingBottom: '56.25%', background: '#000' }}>
+                <iframe
+                  src={`https://www.youtube.com/embed/${recipe.youtube_id}?rel=0`}
+                  className="absolute inset-0 w-full h-full"
+                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                  allowFullScreen
+                  title={`${recipe.title} 조리 영상`}
+                />
+              </div>
+              {recipe.youtube_credit && (
+                <div className="flex items-center gap-1.5">
+                  <ExternalLink size={12} color="var(--text-3)" />
+                  <p className="text-[12px]" style={{ color: 'var(--text-3)' }}>
+                    참고 영상: {recipe.youtube_credit}
+                  </p>
+                </div>
+              )}
             </div>
           ) : (
             <a
@@ -159,37 +193,25 @@ export default async function RecipeDetailPage({ params }: { params: Promise<Par
           )}
         </section>
 
-        {/* Main ingredients */}
-        <section>
-          <h2 className="text-[17px] font-black mb-3" style={{ color: 'var(--text-1)' }}>주재료</h2>
-          <div className="grid grid-cols-2 gap-2">
-            {mainIngredients.map(ing => (
-              <div key={ing.ingredient_id}
-                   className="flex items-center gap-2.5 rounded-2xl px-3 py-2.5"
-                   style={{ background: 'var(--brand-light)', border: '1px solid rgba(201,75,42,0.12)' }}>
-                <span className="w-1.5 h-1.5 rounded-full shrink-0" style={{ background: 'var(--brand)' }} />
-                <span className="text-[13px] font-semibold truncate" style={{ color: 'var(--text-1)' }}>
-                  {ing.name}
-                </span>
-                <span className="text-[12px] ml-auto shrink-0" style={{ color: 'var(--text-3)' }}>
-                  {ing.base_amount}{ing.unit}
-                </span>
-              </div>
-            ))}
-          </div>
-        </section>
+        {/* Servings scaler + ingredients (client component) */}
+        <ServingsScaler baseServings={recipe.servings} ingredients={recipe.ingredients} />
 
-        {/* Seasonings */}
-        {seasonings.length > 0 && (
+        {/* Combo → sub-recipe links */}
+        {relatedSingles.length > 0 && (
           <section>
-            <h2 className="text-[17px] font-black mb-3" style={{ color: 'var(--text-1)' }}>양념</h2>
-            <div className="flex flex-wrap gap-2">
-              {seasonings.map(ing => (
-                <span key={ing.ingredient_id}
-                      className="text-[12px] px-3 py-1.5 rounded-full font-medium"
-                      style={{ background: 'var(--surface)', color: 'var(--text-2)', border: '1px solid var(--border)' }}>
-                  {ing.name} {ing.base_amount}{ing.unit}
-                </span>
+            <h2 className="text-[17px] font-black mb-3" style={{ color: 'var(--text-1)' }}>이 코스의 구성 레시피</h2>
+            <div className="space-y-2">
+              {relatedSingles.map(sub => sub && (
+                <Link key={sub.id} href={`/recipe/${sub.id}`}
+                      className="flex items-center gap-3 rounded-2xl px-4 py-3 touch-manipulation"
+                      style={{ background: 'var(--surface)', border: '1px solid var(--border)' }}>
+                  <span className="text-2xl">{sub.thumbnail}</span>
+                  <div className="flex-1">
+                    <p className="font-bold text-[14px]" style={{ color: 'var(--text-1)' }}>{sub.title}</p>
+                    <p className="text-[12px] mt-0.5 line-clamp-1" style={{ color: 'var(--text-3)' }}>{sub.story}</p>
+                  </div>
+                  <ArrowLeft size={16} color="var(--text-3)" strokeWidth={2} style={{ transform: 'rotate(180deg)' }} />
+                </Link>
               ))}
             </div>
           </section>

@@ -1,10 +1,12 @@
 'use client';
 import { useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
+import Link from 'next/link';
+import { Plus } from 'lucide-react';
 import { ScreenWrapper } from '@/components/layout/ScreenWrapper';
 import { RecipeCard } from '@/components/recipes/RecipeCard';
 import { useApp } from '@/context/AppContext';
-import { mockRecipes } from '@/data/mockRecipes';
+import { useRecipes } from '@/hooks/useRecipes';
 import type { Recipe, FridgeItem } from '@/types';
 
 type Filter = 'all' | 'single' | 'combo';
@@ -22,20 +24,21 @@ export default function RecipePage() {
   const { state, dispatch } = useApp();
   const router = useRouter();
   const { fridgeItems } = state;
+  const allRecipes = useRecipes();
 
   const [query, setQuery] = useState('');
   const [filter, setFilter] = useState<Filter>('all');
 
   const sorted = useMemo(() => {
-    const list = mockRecipes
+    const list = allRecipes
       .filter(r => filter === 'all' || (filter === 'combo' ? r.isCombo : !r.isCombo))
       .filter(r => r.title.includes(query) || r.story.includes(query));
     return fridgeItems.length > 0
       ? [...list].sort((a, b) => getMatchRate(b, fridgeItems) - getMatchRate(a, fridgeItems))
       : list;
-  }, [fridgeItems, filter, query]);
+  }, [allRecipes, fridgeItems, filter, query]);
 
-  const canMakeNow = mockRecipes.filter(r => getMatchRate(r, fridgeItems) >= 80).length;
+  const canMakeNow = allRecipes.filter(r => getMatchRate(r, fridgeItems) >= 80).length;
 
   function handleStart(recipe: Recipe) {
     dispatch({ type: 'START_COOKING', payload: recipe });
@@ -52,8 +55,16 @@ export default function RecipePage() {
     ? `지금 바로 만들 수 있는 레시피 ${canMakeNow}개`
     : '냉장고 재료를 등록하면 맞춤 추천해 드려요';
 
+  const addButton = (
+    <Link href="/recipe/submit"
+          className="w-9 h-9 flex items-center justify-center rounded-xl touch-manipulation"
+          style={{ background: 'var(--brand-light)' }}>
+      <Plus size={18} color="var(--brand)" strokeWidth={2.5} />
+    </Link>
+  );
+
   return (
-    <ScreenWrapper title="🍳 레시피" subtitle={subtitle}>
+    <ScreenWrapper title="레시피" subtitle={subtitle} action={addButton}>
       <div className="space-y-4">
 
         {fridgeItems.length > 0 && (
@@ -67,7 +78,7 @@ export default function RecipePage() {
               <p className="text-xs text-orange-600 mt-0.5">보유 식재료</p>
             </div>
             <div className="bg-purple-50 rounded-xl p-3">
-              <p className="text-xl font-black text-purple-600">{mockRecipes.filter(r => r.isCombo).length}</p>
+              <p className="text-xl font-black text-purple-600">{allRecipes.filter(r => r.isCombo).length}</p>
               <p className="text-xs text-purple-700 mt-0.5">2구 코스</p>
             </div>
           </div>

@@ -33,5 +33,6 @@ export function useCookTimer() {
         intervalRef.current = null;
       }
     };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [state.cookSession?.isRunning, state.cookSession?.isComplete, dispatch]);
 }

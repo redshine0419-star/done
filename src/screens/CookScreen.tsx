@@ -50,7 +50,8 @@ export function CookScreen() {
       if (!b1Complete) dispatch({ type: 'ADVANCE_COOK_STEP', payload: { burner: 1 } });
       else if (!b2Complete) dispatch({ type: 'ADVANCE_COOK_STEP', payload: { burner: 2 } });
     } else if (cmd === 'pause') {
-      cs!.isRunning ? dispatch({ type: 'PAUSE_COOKING' }) : dispatch({ type: 'RESUME_COOKING' });
+      if (cs!.isRunning) dispatch({ type: 'PAUSE_COOKING' });
+      else dispatch({ type: 'RESUME_COOKING' });
     } else if (cmd === 'complete') {
       setShowComplete(true);
     }

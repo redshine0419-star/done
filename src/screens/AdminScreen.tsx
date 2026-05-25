@@ -3,19 +3,15 @@ import { useState } from 'react';
 import { mockRecipes } from '@/data/mockRecipes';
 import type { BlogPost, Recipe } from '@/types';
 
-const ADMIN_SECRET = process.env.NEXT_PUBLIC_ADMIN_SECRET;
-
 export function AdminScreen() {
+  const [secret, setSecret] = useState('');
+  const [authed, setAuthed] = useState(false);
   const [generating, setGenerating] = useState<string | null>(null);
   const [drafts, setDrafts] = useState<(BlogPost & { db_id?: string })[]>([]);
   const [publishing, setPublishing] = useState<string | null>(null);
   const [message, setMessage] = useState('');
 
   async function handleGenerate(recipe: Recipe) {
-    if (!ADMIN_SECRET) {
-      setMessage('⚠️ VITE_ADMIN_SECRET 환경변수가 없습니다.');
-      return;
-    }
     setGenerating(recipe.id);
     setMessage('');
     try {
@@ -23,7 +19,7 @@ export function AdminScreen() {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'x-admin-secret': ADMIN_SECRET,
+          'x-admin-secret': secret,
         },
         body: JSON.stringify({ recipe }),
       });
@@ -63,7 +59,7 @@ export function AdminScreen() {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'x-admin-secret': ADMIN_SECRET,
+          'x-admin-secret': secret,
         },
         body: JSON.stringify({ post_id: draft.db_id }),
       });
@@ -76,13 +72,40 @@ export function AdminScreen() {
     }
   }
 
+  if (!authed) {
+    return (
+      <div className="min-h-screen bg-gray-900 text-white flex items-center justify-center p-6">
+        <div className="w-full max-w-sm space-y-4">
+          <div className="text-center">
+            <span className="text-5xl">🔧</span>
+            <h1 className="text-xl font-black mt-3">관리자 로그인</h1>
+          </div>
+          <input
+            type="password"
+            placeholder="ADMIN_SECRET 입력"
+            value={secret}
+            onChange={e => setSecret(e.target.value)}
+            onKeyDown={e => e.key === 'Enter' && secret && setAuthed(true)}
+            className="w-full h-12 bg-gray-800 rounded-xl px-4 text-white placeholder-gray-500 border border-gray-700 focus:outline-none focus:border-orange-400"
+          />
+          <button
+            onClick={() => secret && setAuthed(true)}
+            className="w-full h-12 rounded-xl bg-[#FF6B35] text-white font-bold"
+          >
+            입력
+          </button>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-gray-900 text-white p-6 space-y-6">
       <div className="flex items-center gap-3">
         <span className="text-3xl">🔧</span>
         <div>
           <h1 className="text-xl font-black">플레이버 싱크 관리자</h1>
-          <p className="text-gray-400 text-sm">Claude AI 블로그 자동 생성</p>
+          <p className="text-gray-400 text-sm">Gemini AI 블로그 자동 생성</p>
         </div>
       </div>
 
@@ -106,7 +129,7 @@ export function AdminScreen() {
               disabled={generating === recipe.id}
               className="px-4 py-2 rounded-xl bg-[#FF6B35] text-white text-sm font-bold touch-manipulation disabled:opacity-50"
             >
-              {generating === recipe.id ? '생성 중...' : 'Claude로 생성'}
+              {generating === recipe.id ? '생성 중...' : 'Gemini로 생성'}
             </button>
           </div>
         ))}

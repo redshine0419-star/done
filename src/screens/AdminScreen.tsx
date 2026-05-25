@@ -52,7 +52,7 @@ export function AdminScreen() {
   }
 
   async function handlePublish(draft: BlogPost & { db_id?: string }) {
-    if (!ADMIN_SECRET || !draft.db_id) return;
+    if (!secret || !draft.db_id) return;
     setPublishing(draft.db_id);
     try {
       await fetch('/api/publish-post', {

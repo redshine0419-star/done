@@ -86,9 +86,10 @@ export function AddIngredientModal({ isOpen, onClose, onAdd, editItem, onEdit }:
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-end">
+    <div className="fixed inset-0 z-[100] flex items-end">
       <div className="absolute inset-0 bg-black/40" onClick={onClose} />
-      <div className="relative w-full bg-white rounded-t-3xl p-6 space-y-4 shadow-xl">
+      <div className="relative w-full bg-white rounded-t-3xl p-6 space-y-4 shadow-xl"
+           style={{ paddingBottom: 'calc(1.5rem + env(safe-area-inset-bottom, 0px) + 60px)' }}>
         <div className="w-10 h-1 bg-gray-300 rounded-full mx-auto -mt-2 mb-3" />
         <h2 className="text-lg font-bold text-gray-900">
           {isEditMode ? '식재료 수정' : '식재료 추가'}

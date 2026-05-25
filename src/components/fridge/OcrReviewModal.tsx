@@ -42,9 +42,10 @@ export function OcrReviewModal({ items: initial, onConfirm, onClose }: Props) {
 
   if (items.length === 0) {
     return (
-      <div className="fixed inset-0 z-50 flex items-end">
+      <div className="fixed inset-0 z-[100] flex items-end">
         <div className="absolute inset-0 bg-black/50" onClick={onClose} />
-        <div className="relative w-full bg-white rounded-t-3xl p-6 text-center">
+        <div className="relative w-full bg-white rounded-t-3xl p-6 text-center"
+             style={{ paddingBottom: 'calc(1.5rem + env(safe-area-inset-bottom, 0px) + 60px)' }}>
           <p className="text-4xl mb-3">🔍</p>
           <p className="font-bold text-gray-800">식재료를 찾지 못했어요</p>
           <p className="text-sm text-gray-400 mt-1">영수증이나 식재료가 잘 보이는 사진을 다시 시도해 보세요.</p>
@@ -55,7 +56,7 @@ export function OcrReviewModal({ items: initial, onConfirm, onClose }: Props) {
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-end">
+    <div className="fixed inset-0 z-[100] flex items-end">
       <div className="absolute inset-0 bg-black/50" onClick={onClose} />
       <div className="relative w-full bg-white rounded-t-3xl shadow-2xl max-h-[85vh] flex flex-col">
         <div className="w-10 h-1 bg-gray-300 rounded-full mx-auto mt-3 mb-1 shrink-0" />
@@ -105,7 +106,8 @@ export function OcrReviewModal({ items: initial, onConfirm, onClose }: Props) {
           ))}
         </div>
 
-        <div className="px-5 pb-6 pt-3 space-y-2 shrink-0 border-t border-gray-100">
+        <div className="px-5 pt-3 space-y-2 shrink-0 border-t border-gray-100"
+             style={{ paddingBottom: 'calc(1.5rem + env(safe-area-inset-bottom, 0px) + 60px)' }}>
           <button
             onClick={handleConfirm}
             className="w-full h-14 rounded-2xl bg-[#FF6B35] text-white font-bold text-base touch-manipulation"

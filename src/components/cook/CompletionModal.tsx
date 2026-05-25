@@ -9,9 +9,10 @@ interface Props {
 
 export function CompletionModal({ adjustedIngredients, onConfirm, onClose }: Props) {
   return (
-    <div className="fixed inset-0 z-50 flex items-end">
-      <div className="absolute inset-0 bg-black/50" />
-      <div className="relative w-full bg-white rounded-t-3xl p-6 space-y-4 shadow-2xl">
+    <div className="fixed inset-0 z-[100] flex items-end">
+      <div className="absolute inset-0 bg-black/50" onClick={onClose} />
+      <div className="relative w-full bg-white rounded-t-3xl p-6 space-y-4 shadow-2xl"
+           style={{ paddingBottom: 'calc(1.5rem + env(safe-area-inset-bottom, 0px) + 60px)' }}>
         <div className="text-center">
           <p className="text-5xl mb-2">🎉</p>
           <h2 className="text-xl font-black text-gray-900">조리 완료!</h2>

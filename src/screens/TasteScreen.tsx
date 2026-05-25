@@ -13,7 +13,7 @@ export function TasteScreen() {
   }
 
   return (
-    <ScreenWrapper title="❤️ 미각 매트릭스" subtitle="내 입맛에 맞게 레시피를 자동 조정합니다">
+    <ScreenWrapper title="미각 매트릭스" subtitle="내 입맛에 맞게 레시피 재료를 자동 조정합니다">
       <div className="space-y-4">
         <TasteSlider
           label="맵기 강도"

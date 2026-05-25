@@ -2,15 +2,39 @@
 @tailwind components;
 @tailwind utilities;
 
+@import url('https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;600;700;900&display=swap');
+
+:root {
+  --brand:        #C94B2A;
+  --brand-light:  #FEF0E8;
+  --brand-mid:    #F4C4AC;
+  --bg:           #F5F1EC;
+  --surface:      #FFFFFF;
+  --border:       #E6DDD4;
+  --text-1:       #1A1208;
+  --text-2:       #6B5B4E;
+  --text-3:       #A89A90;
+  --green:        #2B7A4F;
+  --green-light:  #E6F4ED;
+  --amber:        #B86B0A;
+  --amber-light:  #FEF3E2;
+  --red:          #B52A1A;
+  --red-light:    #FEE9E7;
+}
+
 @layer base {
   html, body {
     height: 100%;
     margin: 0;
   }
   body {
-    background-color: #f9fafb;
+    background-color: var(--bg);
+    font-family: 'Noto Sans KR', -apple-system, BlinkMacSystemFont, sans-serif;
     -webkit-tap-highlight-color: transparent;
     -webkit-font-smoothing: antialiased;
+    color: var(--text-1);
+    word-break: keep-all;
+    overflow-wrap: break-word;
   }
 }
 
@@ -21,4 +45,13 @@
   .touch-manipulation {
     touch-action: manipulation;
   }
+  .text-brand    { color: var(--brand); }
+  .bg-brand      { background-color: var(--brand); }
+  .bg-brand-light { background-color: var(--brand-light); }
+  .border-brand  { border-color: var(--brand); }
+  .bg-surface    { background-color: var(--surface); }
+  .bg-app        { background-color: var(--bg); }
+  .border-app    { border-color: var(--border); }
+  .text-muted    { color: var(--text-3); }
+  .text-secondary { color: var(--text-2); }
 }

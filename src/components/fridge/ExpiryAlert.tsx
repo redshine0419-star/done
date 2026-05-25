@@ -1,17 +1,9 @@
 'use client';
+import { AlertTriangle } from 'lucide-react';
 import type { FridgeItem } from '@/types';
 import { getDaysUntilExpiry } from '@/utils/expiry';
 
-interface Props {
-  items: FridgeItem[];
-}
-
-const EXPIRY_STYLE: Record<number, string> = {
-  0: 'bg-red-100 text-red-700 border-red-300',
-  1: 'bg-orange-100 text-orange-700 border-orange-300',
-  2: 'bg-yellow-100 text-yellow-700 border-yellow-300',
-  3: 'bg-lime-100 text-lime-700 border-lime-300',
-};
+interface Props { items: FridgeItem[]; }
 
 export function ExpiryAlert({ items }: Props) {
   const urgent = items
@@ -22,19 +14,25 @@ export function ExpiryAlert({ items }: Props) {
   if (urgent.length === 0) return null;
 
   return (
-    <div className="rounded-2xl bg-red-50 border border-red-200 p-3">
-      <p className="text-sm font-bold text-red-600 mb-2">⚠️ 유통기한 임박 식재료</p>
+    <div className="rounded-2xl p-4" style={{ background: 'var(--amber-light)', border: '1px solid #F4C97A' }}>
+      <div className="flex items-center gap-2 mb-3">
+        <AlertTriangle size={15} color="var(--amber)" strokeWidth={2.5} />
+        <p className="text-[13px] font-bold" style={{ color: 'var(--amber)' }}>유통기한 임박</p>
+      </div>
       <div className="flex flex-wrap gap-2">
-        {urgent.map(item => {
-          const style = EXPIRY_STYLE[item.days] ?? EXPIRY_STYLE[3];
-          const label = item.days === 0 ? 'D-DAY' : `D-${item.days}`;
-          return (
-            <span key={item.ingredient_id} className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-bold border ${style}`}>
-              {item.icon} {item.name}
-              <span className="font-black">{label}</span>
+        {urgent.map(item => (
+          <span
+            key={item.ingredient_id}
+            className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[12px] font-semibold bg-surface"
+            style={{ color: 'var(--text-1)', border: '1px solid var(--border)' }}
+          >
+            <span>{item.icon}</span>
+            <span>{item.name}</span>
+            <span className="font-black" style={{ color: 'var(--amber)' }}>
+              {item.days === 0 ? 'D-DAY' : `D-${item.days}`}
             </span>
-          );
-        })}
+          </span>
+        ))}
       </div>
     </div>
   );

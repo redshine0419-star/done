@@ -7,6 +7,7 @@ import { BurnerPlayer } from '@/components/cook/BurnerPlayer';
 import { GanttTimeline } from '@/components/cook/GanttTimeline';
 import { VoiceControlSim } from '@/components/cook/VoiceControlSim';
 import { CompletionModal } from '@/components/cook/CompletionModal';
+import { Pause, Play, X } from 'lucide-react';
 import { useApp } from '@/context/AppContext';
 import { useCookTimer } from '@/hooks/useTimer';
 import { adjustedAmount, dominantTasteLevel } from '@/utils/tasteMatrix';
@@ -24,14 +25,24 @@ export function CookScreen() {
 
   if (!recipe || !cs) {
     return (
-      <ScreenWrapper title="⏱ 쿠킹 모드">
-        <div className="flex flex-col items-center justify-center h-64 text-gray-400 space-y-3">
-          <p className="text-5xl">🍽️</p>
-          <p className="font-semibold text-gray-600">조리할 레시피를 선택해 주세요</p>
-          <p className="text-sm">레시피 탭에서 레시피를 선택하세요</p>
+      <ScreenWrapper title="조리 모드">
+        <div className="flex flex-col items-center justify-center h-64 gap-4">
+          <div className="w-20 h-20 rounded-3xl flex items-center justify-center text-4xl"
+               style={{ background: 'var(--brand-light)' }}>
+            🍽️
+          </div>
+          <div className="text-center">
+            <p className="font-bold text-[16px]" style={{ color: 'var(--text-1)' }}>
+              조리할 레시피를 선택해 주세요
+            </p>
+            <p className="text-[13px] mt-1" style={{ color: 'var(--text-3)' }}>
+              레시피 탭에서 레시피를 선택하세요
+            </p>
+          </div>
           <button
             onClick={() => router.push('/recipe')}
-            className="mt-2 px-6 py-3 rounded-2xl bg-[#FF6B35] text-white font-bold touch-manipulation"
+            className="px-6 py-3 rounded-2xl font-bold text-[14px] touch-manipulation"
+            style={{ background: 'var(--brand)', color: 'white' }}
           >
             레시피 보러 가기
           </button>
@@ -81,22 +92,27 @@ export function CookScreen() {
 
   return (
     <>
-      <ScreenWrapper title={`⏱ ${recipe.title}`} subtitle={recipe.isCombo ? '2구 병렬 조리 중' : '1구 단독 조리 중'} noPad>
+      <ScreenWrapper title={recipe.title} subtitle={recipe.isCombo ? '2구 병렬 조리 중' : '1구 단독 조리 중'} noPad>
         <div className="px-4 pt-4 space-y-4 pb-4">
           <div className="flex items-center justify-between flex-wrap gap-2">
             <WakeLockToggle />
             <div className="flex gap-2">
               <button
                 onClick={() => cs.isRunning ? dispatch({ type: 'PAUSE_COOKING' }) : dispatch({ type: 'RESUME_COOKING' })}
-                className="px-4 py-2 rounded-full bg-gray-100 text-gray-700 text-sm font-semibold touch-manipulation"
+                className="flex items-center gap-1.5 px-4 py-2 rounded-full text-[13px] font-semibold touch-manipulation"
+                style={{ background: 'var(--bg)', color: 'var(--text-2)' }}
               >
-                {cs.isRunning ? '⏸ 일시정지' : '▶ 재개'}
+                {cs.isRunning
+                  ? <><Pause size={13} strokeWidth={2} /> 일시정지</>
+                  : <><Play size={13} strokeWidth={2} /> 재개</>
+                }
               </button>
               <button
                 onClick={() => { dispatch({ type: 'RESET_COOKING' }); setShowComplete(false); router.push('/recipe'); }}
-                className="px-4 py-2 rounded-full bg-gray-100 text-gray-500 text-sm font-semibold touch-manipulation"
+                className="flex items-center gap-1.5 px-4 py-2 rounded-full text-[13px] font-semibold touch-manipulation"
+                style={{ background: 'var(--bg)', color: 'var(--text-3)' }}
               >
-                ✕ 종료
+                <X size={13} strokeWidth={2} /> 종료
               </button>
             </div>
           </div>
@@ -136,9 +152,10 @@ export function CookScreen() {
           {b1Complete && b2Complete && (
             <button
               onClick={() => setShowComplete(true)}
-              className="w-full h-14 rounded-2xl bg-green-500 text-white font-bold text-lg touch-manipulation shadow-md"
+              className="w-full h-[54px] rounded-2xl font-bold text-[15px] touch-manipulation"
+              style={{ background: 'var(--green)', color: 'white', boxShadow: '0 2px 12px rgba(43,122,79,0.3)' }}
             >
-              🎉 조리 완료 — 재료 차감하기
+              조리 완료 — 재료 차감하기
             </button>
           )}
         </div>

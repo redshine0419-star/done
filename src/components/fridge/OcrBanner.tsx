@@ -1,5 +1,6 @@
 'use client';
 import { useRef, useState } from 'react';
+import { Camera, X, Loader2 } from 'lucide-react';
 import { useApp } from '@/context/AppContext';
 import { OcrReviewModal } from '@/components/fridge/OcrReviewModal';
 import { expireDateFromDays } from '@/utils/expiry';
@@ -26,8 +27,7 @@ async function compressImage(file: File): Promise<{ base64: string; mimeType: st
         else { width = Math.round((width * MAX) / height); height = MAX; }
       }
       const canvas = document.createElement('canvas');
-      canvas.width = width;
-      canvas.height = height;
+      canvas.width = width; canvas.height = height;
       canvas.getContext('2d')!.drawImage(img, 0, 0, width, height);
       URL.revokeObjectURL(objectUrl);
       const dataUrl = canvas.toDataURL('image/jpeg', 0.82);
@@ -48,7 +48,6 @@ export function OcrBanner() {
     const file = e.target.files?.[0];
     if (!file) return;
     e.target.value = '';
-
     setStage('loading');
     try {
       const { base64, mimeType } = await compressImage(file);
@@ -84,55 +83,53 @@ export function OcrBanner() {
 
   return (
     <>
-      <input
-        ref={fileRef}
-        type="file"
-        accept="image/*"
-        capture="environment"
-        className="hidden"
-        onChange={handleFileChange}
-      />
+      <input ref={fileRef} type="file" accept="image/*" capture="environment"
+             className="hidden" onChange={handleFileChange} />
 
       <button
         onClick={() => fileRef.current?.click()}
         disabled={stage === 'loading'}
-        className="w-full rounded-2xl bg-gradient-to-r from-[#FF6B35] to-orange-400 p-4 text-left shadow-md touch-manipulation disabled:opacity-70"
+        className="w-full rounded-2xl p-4 text-left touch-manipulation disabled:opacity-70 transition-opacity"
+        style={{ background: 'var(--brand)', boxShadow: '0 2px 12px rgba(201,75,42,0.25)' }}
       >
         <div className="flex items-center gap-3">
-          <span className="text-4xl">{stage === 'loading' ? '⏳' : '📸'}</span>
-          <div>
-            <p className="text-white font-bold text-base">
+          <div className="w-10 h-10 rounded-xl bg-white/15 flex items-center justify-center shrink-0">
+            {stage === 'loading'
+              ? <Loader2 size={20} color="white" className="animate-spin" />
+              : <Camera size={20} color="white" strokeWidth={1.8} />
+            }
+          </div>
+          <div className="flex-1">
+            <p className="text-white font-bold text-[15px] leading-snug">
               {stage === 'loading' ? 'AI가 식재료를 인식 중...' : '영수증 스캔으로 자동 등록'}
             </p>
-            <p className="text-orange-100 text-sm mt-0.5">
+            <p className="text-white/70 text-[12px] mt-0.5">
               {stage === 'loading'
                 ? 'Gemini AI가 이미지를 분석하고 있어요'
-                : '마트 영수증·냉장고 사진 → 식재료 자동 인식'}
+                : '마트 영수증 · 냉장고 사진 → 자동 인식'}
             </p>
           </div>
           {stage !== 'loading' && (
-            <span className="ml-auto px-2 py-1 rounded-full bg-white/20 text-white text-xs font-bold shrink-0">NEW</span>
+            <span className="shrink-0 px-2.5 py-1 rounded-full bg-white/20 text-white text-[11px] font-bold">AI</span>
           )}
         </div>
       </button>
 
       {stage === 'error' && (
-        <div className="rounded-xl bg-red-50 border border-red-200 px-4 py-3 flex items-start gap-2">
-          <span className="text-red-400 shrink-0">⚠️</span>
+        <div className="rounded-2xl px-4 py-3 flex items-start gap-3"
+             style={{ background: 'var(--red-light)', border: '1px solid #F4A9A0' }}>
           <div className="flex-1 min-w-0">
-            <p className="text-xs font-bold text-red-700">인식 실패: {errMsg}</p>
-            <p className="text-xs text-red-500 mt-0.5">식재료가 잘 보이는 사진으로 다시 시도해 보세요.</p>
+            <p className="text-[13px] font-bold" style={{ color: 'var(--red)' }}>인식 실패: {errMsg}</p>
+            <p className="text-[12px] mt-0.5" style={{ color: 'var(--red)' }}>식재료가 잘 보이는 사진으로 다시 시도해 보세요.</p>
           </div>
-          <button onClick={() => setStage('idle')} className="text-red-300 text-sm shrink-0">✕</button>
+          <button onClick={() => setStage('idle')} className="shrink-0 touch-manipulation">
+            <X size={16} color="var(--red)" />
+          </button>
         </div>
       )}
 
       {stage === 'review' && (
-        <OcrReviewModal
-          items={extracted}
-          onConfirm={handleConfirm}
-          onClose={() => setStage('idle')}
-        />
+        <OcrReviewModal items={extracted} onConfirm={handleConfirm} onClose={() => setStage('idle')} />
       )}
     </>
   );

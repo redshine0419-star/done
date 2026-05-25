@@ -1,6 +1,7 @@
 'use client';
 import { useState } from 'react';
 import Link from 'next/link';
+import { ChevronDown, Clock, Users, Zap, Check, X, ExternalLink } from 'lucide-react';
 import type { Recipe, FridgeItem } from '@/types';
 
 interface Props {
@@ -24,108 +25,141 @@ function getMatchInfo(recipe: Recipe, fridgeItems: FridgeItem[]) {
   return { rate, have: have.length, total: mains.length };
 }
 
-function MatchBadge({ rate, have, total }: { rate: number; have: number; total: number }) {
-  if (rate >= 80) {
-    return (
-      <span className="px-2 py-0.5 rounded-full bg-green-100 text-green-700 text-xs font-bold">
-        ✓ 바로 가능
-      </span>
-    );
-  }
-  if (rate >= 50) {
-    return (
-      <span className="px-2 py-0.5 rounded-full bg-yellow-100 text-yellow-700 text-xs font-bold">
-        재료 {total - have}개 부족
-      </span>
-    );
-  }
+function MatchRing({ rate }: { rate: number }) {
+  const r = 14;
+  const circ = 2 * Math.PI * r;
+  const color = rate >= 80 ? 'var(--green)' : rate >= 50 ? 'var(--amber)' : 'var(--text-3)';
   return (
-    <span className="px-2 py-0.5 rounded-full bg-gray-100 text-gray-500 text-xs font-bold">
-      재료 {have}/{total}개 보유
-    </span>
+    <div className="relative w-11 h-11 shrink-0">
+      <svg viewBox="0 0 36 36" className="w-11 h-11 -rotate-90">
+        <circle cx="18" cy="18" r={r} fill="none" stroke="var(--border)" strokeWidth="2.5" />
+        <circle
+          cx="18" cy="18" r={r} fill="none" stroke={color} strokeWidth="2.5"
+          strokeDasharray={`${(rate / 100) * circ} ${circ}`}
+          strokeLinecap="round"
+        />
+      </svg>
+      <span className="absolute inset-0 flex items-center justify-center text-[10px] font-black" style={{ color }}>
+        {rate}%
+      </span>
+    </div>
   );
 }
 
 export function RecipeCard({ recipe, fridgeItems, onStart }: Props) {
   const [open, setOpen] = useState(false);
-  const { sequential, parallel, savings } = getTimings(recipe);
+  const { parallel, sequential, savings } = getTimings(recipe);
   const match = getMatchInfo(recipe, fridgeItems);
 
   return (
-    <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
-      <div className="p-4 flex items-center gap-4 cursor-pointer" onClick={() => setOpen(v => !v)}>
-        {/* 매칭율 원형 게이지 */}
-        <div className="relative shrink-0 w-14 h-14">
-          <svg viewBox="0 0 36 36" className="w-14 h-14 -rotate-90">
-            <circle cx="18" cy="18" r="15.9" fill="none" stroke="#f3f4f6" strokeWidth="3" />
-            <circle
-              cx="18" cy="18" r="15.9" fill="none"
-              stroke={match.rate >= 80 ? '#22c55e' : match.rate >= 50 ? '#eab308' : '#d1d5db'}
-              strokeWidth="3"
-              strokeDasharray={`${match.rate} ${100 - match.rate}`}
-              strokeLinecap="round"
-            />
-          </svg>
-          <span className="absolute inset-0 flex items-center justify-center text-xs font-black text-gray-700">
-            {match.rate}%
-          </span>
-        </div>
+    <div className="rounded-2xl overflow-hidden bg-surface" style={{ border: '1px solid var(--border)' }}>
+      {/* Header row */}
+      <button
+        className="w-full text-left px-4 py-3.5 flex items-center gap-3 touch-manipulation"
+        onClick={() => setOpen(v => !v)}
+      >
+        <MatchRing rate={match.rate} />
 
         <div className="flex-1 min-w-0">
-          <div className="flex flex-wrap gap-1.5 mb-1">
-            <MatchBadge {...match} />
-            {recipe.isCombo && (
-              <span className="px-2 py-0.5 rounded-full bg-purple-100 text-purple-700 text-xs font-bold">⚡ 2구</span>
+          <div className="flex flex-wrap items-center gap-1.5 mb-1.5">
+            {match.rate >= 80 && (
+              <span className="inline-flex items-center gap-1 text-[11px] font-bold px-2 py-0.5 rounded-full"
+                    style={{ background: 'var(--green-light)', color: 'var(--green)' }}>
+                <Check size={10} strokeWidth={3} /> 바로 가능
+              </span>
             )}
-            <span className="px-2 py-0.5 rounded-full bg-orange-100 text-orange-700 text-xs font-medium">
-              {Math.round(parallel / 60)}분
-            </span>
+            {match.rate >= 50 && match.rate < 80 && (
+              <span className="text-[11px] font-bold px-2 py-0.5 rounded-full"
+                    style={{ background: 'var(--amber-light)', color: 'var(--amber)' }}>
+                재료 {match.total - match.have}개 부족
+              </span>
+            )}
+            {match.rate < 50 && match.total > 0 && (
+              <span className="text-[11px] font-medium px-2 py-0.5 rounded-full"
+                    style={{ background: 'var(--bg)', color: 'var(--text-3)' }}>
+                {match.have}/{match.total}개 보유
+              </span>
+            )}
+            {recipe.isCombo && (
+              <span className="inline-flex items-center gap-1 text-[11px] font-bold px-2 py-0.5 rounded-full"
+                    style={{ background: '#F0ECFF', color: '#6B3FD4' }}>
+                <Zap size={10} strokeWidth={2.5} /> 2구
+              </span>
+            )}
           </div>
-          <div className="flex items-center gap-1">
-            <h3 className="font-bold text-gray-900 text-sm truncate">{recipe.title}</h3>
+
+          <div className="flex items-center gap-2">
+            <h3 className="font-bold text-[15px] truncate" style={{ color: 'var(--text-1)' }}>
+              {recipe.title}
+            </h3>
             <Link
               href={`/recipe/${recipe.id}`}
               onClick={e => e.stopPropagation()}
-              className="text-[10px] text-orange-400 shrink-0 hover:underline"
+              className="shrink-0 inline-flex items-center gap-0.5 text-[11px] font-semibold touch-manipulation"
+              style={{ color: 'var(--brand)' }}
             >
-              상세 ›
+              상세 <ExternalLink size={10} strokeWidth={2.5} />
             </Link>
           </div>
-          <p className="text-xs text-gray-400 mt-0.5">{recipe.servings}인분</p>
+
+          <div className="flex items-center gap-3 mt-0.5">
+            <span className="inline-flex items-center gap-1 text-[12px]" style={{ color: 'var(--text-3)' }}>
+              <Clock size={11} strokeWidth={2} />{Math.round(parallel / 60)}분
+            </span>
+            <span className="inline-flex items-center gap-1 text-[12px]" style={{ color: 'var(--text-3)' }}>
+              <Users size={11} strokeWidth={2} />{recipe.servings}인분
+            </span>
+          </div>
         </div>
 
-        <div className="flex flex-col items-end gap-1 shrink-0">
-          <span className="text-2xl">{recipe.thumbnail}</span>
-          <span className={`text-gray-400 text-xl transition-transform ${open ? 'rotate-90' : ''}`}>›</span>
-        </div>
-      </div>
+        <ChevronDown
+          size={18} strokeWidth={2} color="var(--text-3)"
+          className={`shrink-0 transition-transform duration-200 ${open ? 'rotate-180' : ''}`}
+        />
+      </button>
 
+      {/* Expanded panel */}
       {open && (
-        <div className="border-t border-gray-100 px-4 py-4 space-y-4">
+        <div style={{ borderTop: '1px solid var(--border)' }}>
           {recipe.isCombo && savings > 60 && (
-            <div className="rounded-xl bg-gradient-to-r from-purple-50 to-blue-50 border border-purple-100 p-3">
-              <p className="text-xs font-bold text-purple-700 mb-1">⏱ 2구 병렬 시간 분석</p>
-              <div className="grid grid-cols-3 gap-2 text-center text-xs">
-                <div><p className="text-gray-500">1구 순차</p><p className="font-black text-gray-800">{Math.round(sequential / 60)}분</p></div>
-                <div><p className="text-gray-500">2구 병렬</p><p className="font-black text-purple-700">{Math.round(parallel / 60)}분</p></div>
-                <div><p className="text-gray-500">절약</p><p className="font-black text-green-600">-{Math.round(savings / 60)}분</p></div>
+            <div className="mx-4 mt-4 rounded-xl p-3" style={{ background: '#F5F2FF', border: '1px solid #D9CFFF' }}>
+              <p className="text-[12px] font-bold mb-2.5" style={{ color: '#6B3FD4' }}>
+                <Zap size={12} className="inline mr-1" strokeWidth={2.5} />
+                2구 병렬 시간 분석
+              </p>
+              <div className="grid grid-cols-3 gap-2 text-center">
+                {[
+                  { label: '1구 순차', value: `${Math.round(sequential / 60)}분`, color: 'var(--text-2)' },
+                  { label: '2구 병렬', value: `${Math.round(parallel / 60)}분`, color: '#6B3FD4' },
+                  { label: '절약', value: `-${Math.round(savings / 60)}분`, color: 'var(--green)' },
+                ].map(({ label, value, color }) => (
+                  <div key={label}>
+                    <p className="text-[11px]" style={{ color: 'var(--text-3)' }}>{label}</p>
+                    <p className="font-black text-[14px] mt-0.5" style={{ color }}>{value}</p>
+                  </div>
+                ))}
               </div>
             </div>
           )}
 
-          {/* 재료 보유 현황 */}
-          <div>
-            <p className="text-xs font-bold text-gray-500 mb-2">주재료 보유 현황</p>
-            <div className="space-y-1">
+          <div className="px-4 pt-4">
+            <p className="text-[12px] font-bold mb-2" style={{ color: 'var(--text-3)' }}>주재료</p>
+            <div className="space-y-1.5">
               {recipe.ingredients.filter(i => i.type === 'main').map(ing => {
                 const owned = fridgeItems.some(f => f.ingredient_id === ing.ingredient_id);
                 return (
-                  <div key={ing.ingredient_id} className="flex items-center gap-2 text-xs">
-                    <span className={`w-4 h-4 rounded-full flex items-center justify-center text-white text-[10px] shrink-0 ${owned ? 'bg-green-400' : 'bg-gray-200'}`}>
-                      {owned ? '✓' : '✕'}
+                  <div key={ing.ingredient_id} className="flex items-center gap-2.5">
+                    <div className="w-5 h-5 rounded-full flex items-center justify-center shrink-0"
+                         style={{ background: owned ? 'var(--green)' : 'var(--border)' }}>
+                      {owned
+                        ? <Check size={11} color="white" strokeWidth={3} />
+                        : <X size={10} color="var(--text-3)" strokeWidth={2.5} />}
+                    </div>
+                    <span className="text-[13px]" style={{ color: owned ? 'var(--text-1)' : 'var(--text-3)' }}>
+                      {ing.name}
                     </span>
-                    <span className={owned ? 'text-gray-700' : 'text-gray-400'}>
-                      {ing.name} {ing.base_amount}{ing.unit}
+                    <span className="ml-auto text-[12px]" style={{ color: 'var(--text-3)' }}>
+                      {ing.base_amount}{ing.unit}
                     </span>
                   </div>
                 );
@@ -133,28 +167,36 @@ export function RecipeCard({ recipe, fridgeItems, onStart }: Props) {
             </div>
           </div>
 
-          {/* 조리 단계 */}
-          <div className="space-y-1.5">
-            <p className="text-xs font-bold text-gray-500">조리 단계</p>
-            {recipe.steps.map((step, i) => (
-              <div key={i} className="flex items-center gap-2.5 text-sm">
-                <span className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold shrink-0 ${
-                  step.burner === 1 ? 'bg-orange-100 text-orange-700' : 'bg-blue-100 text-blue-700'
-                }`}>
-                  {step.burner}
-                </span>
-                <span className="flex-1 text-gray-700 text-xs">{step.action}</span>
-                <span className="text-gray-400 text-xs shrink-0">{Math.round(step.duration_sec / 60)}분</span>
-              </div>
-            ))}
+          <div className="px-4 pt-4">
+            <p className="text-[12px] font-bold mb-2" style={{ color: 'var(--text-3)' }}>조리 순서</p>
+            <div className="space-y-1.5">
+              {recipe.steps.map((step, i) => (
+                <div key={i} className="flex items-center gap-2.5">
+                  <div className="w-6 h-6 rounded-full flex items-center justify-center text-[11px] font-bold shrink-0"
+                       style={{
+                         background: step.burner === 1 ? 'var(--brand-light)' : step.burner === 2 ? '#EBF2FF' : 'var(--bg)',
+                         color: step.burner === 1 ? 'var(--brand)' : step.burner === 2 ? '#2563EB' : 'var(--text-2)',
+                       }}>
+                    {step.burner ?? '·'}
+                  </div>
+                  <span className="flex-1 text-[13px]" style={{ color: 'var(--text-2)' }}>{step.action}</span>
+                  <span className="text-[12px] shrink-0" style={{ color: 'var(--text-3)' }}>
+                    {Math.round(step.duration_sec / 60)}분
+                  </span>
+                </div>
+              ))}
+            </div>
           </div>
 
-          <button
-            onClick={() => onStart(recipe)}
-            className="w-full h-14 rounded-2xl bg-[#FF6B35] text-white font-bold text-base touch-manipulation shadow-md"
-          >
-            {recipe.isCombo ? '🍳 2구 코스 조리 시작' : '🔥 조리 시작'}
-          </button>
+          <div className="px-4 py-4">
+            <button
+              onClick={() => onStart(recipe)}
+              className="w-full h-[52px] rounded-2xl font-bold text-[15px] touch-manipulation"
+              style={{ background: 'var(--brand)', color: 'white', boxShadow: '0 2px 12px rgba(201,75,42,0.3)' }}
+            >
+              {recipe.isCombo ? '2구 코스 조리 시작' : '조리 시작'}
+            </button>
+          </div>
         </div>
       )}
     </div>

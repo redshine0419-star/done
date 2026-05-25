@@ -38,6 +38,7 @@ export interface Recipe {
   servings: number;
   ingredients: RecipeIngredient[];
   steps: RecipeStep[];
+  youtube_id?: string;
 }
 
 export interface CookSession {

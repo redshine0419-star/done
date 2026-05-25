@@ -5,16 +5,29 @@ interface Props {
   subtitle?: string;
   children: ReactNode;
   noPad?: boolean;
+  action?: ReactNode;
 }
 
-export function ScreenWrapper({ title, subtitle, children, noPad }: Props) {
+export function ScreenWrapper({ title, subtitle, children, noPad, action }: Props) {
   return (
-    <div className="flex flex-col min-h-full bg-gray-50">
-      <header className="sticky top-0 z-40 bg-white border-b border-gray-200 px-4 pt-4 pb-3 shadow-sm">
-        <h1 className="text-xl font-bold text-gray-900">{title}</h1>
-        {subtitle && <p className="text-sm text-gray-500 mt-0.5">{subtitle}</p>}
+    <div className="flex flex-col min-h-full bg-app">
+      <header className="sticky top-0 z-40 bg-surface px-5 pt-5 pb-4"
+              style={{ borderBottom: '1px solid var(--border)' }}>
+        <div className="flex items-start justify-between gap-3">
+          <div>
+            <h1 className="text-[22px] font-black tracking-tight" style={{ color: 'var(--text-1)' }}>
+              {title}
+            </h1>
+            {subtitle && (
+              <p className="text-[13px] mt-0.5 font-medium" style={{ color: 'var(--text-3)' }}>
+                {subtitle}
+              </p>
+            )}
+          </div>
+          {action && <div className="shrink-0 pt-0.5">{action}</div>}
+        </div>
       </header>
-      <main className={`flex-1 pb-20 ${noPad ? '' : 'px-4 pt-4'}`}>
+      <main className={`flex-1 pb-24 ${noPad ? '' : 'px-4 pt-4'}`}>
         {children}
       </main>
     </div>

@@ -90,9 +90,14 @@ async function callGemini(prompt: string): Promise<Record<string, unknown>> {
     }),
   });
 
-  if (!res.ok) throw new Error(`Gemini API error ${res.status}`);
+  const rawText = await res.text();
 
-  const data = await res.json() as { candidates: { content: { parts: { text: string }[] } }[] };
+  if (!res.ok || rawText.trimStart().startsWith('<')) {
+    const preview = rawText.slice(0, 200);
+    throw new Error(`Gemini API error (status ${res.status}): ${preview}`);
+  }
+
+  const data = JSON.parse(rawText) as { candidates: { content: { parts: { text: string }[] } }[] };
   const text = data.candidates?.[0]?.content?.parts?.[0]?.text ?? '';
   const cleaned = text.replace(/^```(?:json)?\s*/i, '').replace(/\s*```\s*$/i, '').trim();
   return JSON.parse(cleaned) as Record<string, unknown>;

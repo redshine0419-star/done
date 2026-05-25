@@ -13,7 +13,9 @@ interface AppState {
 
 type AppAction =
   | { type: 'ADD_FRIDGE_ITEM'; payload: FridgeItem }
+  | { type: 'EDIT_FRIDGE_ITEM'; payload: FridgeItem }
   | { type: 'REMOVE_FRIDGE_ITEM'; payload: { id: string } }
+  | { type: 'LOAD_SAMPLE_DATA' }
   | { type: 'DEDUCT_INGREDIENTS'; payload: AdjustedIngredient[] }
   | { type: 'UPDATE_TASTE'; payload: TasteProfile }
   | { type: 'NAVIGATE'; payload: ScreenId }
@@ -34,8 +36,14 @@ function reducer(state: AppState, action: AppAction): AppState {
     case 'ADD_FRIDGE_ITEM':
       return { ...state, fridgeItems: [...state.fridgeItems, action.payload] };
 
+    case 'EDIT_FRIDGE_ITEM':
+      return { ...state, fridgeItems: state.fridgeItems.map(i => i.ingredient_id === action.payload.ingredient_id ? action.payload : i) };
+
     case 'REMOVE_FRIDGE_ITEM':
       return { ...state, fridgeItems: state.fridgeItems.filter(i => i.ingredient_id !== action.payload.id) };
+
+    case 'LOAD_SAMPLE_DATA':
+      return { ...state, fridgeItems: mockFridgeItems };
 
     case 'DEDUCT_INGREDIENTS': {
       const updated = state.fridgeItems.map(item => {
@@ -164,7 +172,7 @@ function initState(): AppState {
   const rawFridge = loadFromLS<unknown[]>('fs_fridge', []);
   const fridgeItems = rawFridge.length > 0
     ? migrateFridgeItemsV1(rawFridge)
-    : mockFridgeItems;
+    : [];
 
   return {
     fridgeItems,

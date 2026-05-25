@@ -3,6 +3,7 @@ import { getDaysUntilExpiry } from '@/utils/expiry';
 
 interface Props {
   item: FridgeItem;
+  onEdit: (item: FridgeItem) => void;
   onDelete: (id: string) => void;
 }
 
@@ -13,7 +14,7 @@ function expiryColor(days: number) {
   return 'text-gray-400';
 }
 
-export function IngredientCard({ item, onDelete }: Props) {
+export function IngredientCard({ item, onEdit, onDelete }: Props) {
   const days = getDaysUntilExpiry(item.expire_date);
   const label = days === 0 ? 'D-DAY' : days < 0 ? '만료' : `D-${days}`;
 
@@ -26,8 +27,16 @@ export function IngredientCard({ item, onDelete }: Props) {
       </div>
       <span className={`text-xs font-bold shrink-0 ${expiryColor(days)}`}>{label}</span>
       <button
+        onClick={() => onEdit(item)}
+        className="shrink-0 w-7 h-7 flex items-center justify-center rounded-full text-gray-300 hover:text-blue-400 hover:bg-blue-50 transition-colors touch-manipulation"
+        aria-label="수정"
+      >
+        ✎
+      </button>
+      <button
         onClick={() => onDelete(item.ingredient_id)}
         className="shrink-0 w-7 h-7 flex items-center justify-center rounded-full text-gray-300 hover:text-red-400 hover:bg-red-50 transition-colors touch-manipulation"
+        aria-label="삭제"
       >
         ✕
       </button>

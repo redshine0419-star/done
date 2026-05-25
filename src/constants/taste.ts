@@ -15,7 +15,7 @@ export const UNITS = ['g', '개', '대', 'ml', '큰술', '작은술', '컵'] as 
 export const SCREEN_NAV = [
   { id: 'fridge',   label: '냉장고',   icon: '🧊' },
   { id: 'taste',    label: '미각',     icon: '❤️' },
-  { id: 'blog',     label: '블로그',   icon: '📝' },
+  { id: 'blog',     label: '레시피',   icon: '📝' },
   { id: 'recipes',  label: '코스싱크', icon: '🍳' },
   { id: 'magazine', label: '매거진',   icon: '📰' },
 ] as const;

@@ -1,5 +1,15 @@
 import { NextRequest, NextResponse } from 'next/server';
 
+// Diagnostic: GET /api/analyze-recipe-video → check env vars
+export async function GET() {
+  return NextResponse.json({
+    hasGeminiKey: !!process.env.GEMINI_API_KEY,
+    geminiKeyPrefix: process.env.GEMINI_API_KEY?.slice(0, 6) ?? 'NOT_SET',
+    hasDatabaseUrl: !!process.env.DATABASE_URL,
+    nodeVersion: process.version,
+  });
+}
+
 function extractVideoId(url: string): string | null {
   const patterns = [
     /(?:youtube\.com\/watch\?v=|youtu\.be\/|youtube\.com\/embed\/)([A-Za-z0-9_-]{11})/,

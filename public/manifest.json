@@ -5,39 +5,44 @@
   "start_url": "/",
   "display": "standalone",
   "orientation": "portrait",
-  "theme_color": "#FF6B35",
-  "background_color": "#f9fafb",
+  "theme_color": "#C94B2A",
+  "background_color": "#F5F1EC",
   "categories": ["food", "lifestyle", "health"],
   "lang": "ko",
   "icons": [
     {
-      "src": "data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 192 192'><rect width='192' height='192' fill='%23FF6B35' rx='40'/><text y='145' x='96' text-anchor='middle' font-size='118'>🍳</text></svg>",
+      "src": "/favicon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    },
+    {
+      "src": "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 192 192'%3E%3Crect width='192' height='192' fill='%23C94B2A' rx='42'/%3E%3Cpath fill='white' d='M96 24C104 32 128 64 130 99C132 122 122 142 96 148C70 142 60 122 62 99C64 64 88 32 96 24Z'/%3E%3Cpath fill='%23C94B2A' d='M96 76C102 84 108 94 106 108C104 118 100 124 96 126C92 124 88 118 86 108C84 94 90 84 96 76Z'/%3E%3C/svg%3E",
       "sizes": "192x192",
       "type": "image/svg+xml",
       "purpose": "any"
     },
     {
-      "src": "data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 512 512'><rect width='512' height='512' fill='%23FF6B35' rx='112'/><text y='390' x='256' text-anchor='middle' font-size='320'>🍳</text></svg>",
+      "src": "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 512 512'%3E%3Crect width='512' height='512' fill='%23C94B2A' rx='112'/%3E%3Cpath fill='white' d='M256 64C272 80 336 160 340 258C344 320 322 374 256 390C190 374 168 320 172 258C176 160 240 80 256 64Z'/%3E%3Cpath fill='%23C94B2A' d='M256 200C268 218 280 244 276 278C272 304 264 318 256 322C248 318 240 304 236 278C232 244 244 218 256 200Z'/%3E%3C/svg%3E",
       "sizes": "512x512",
       "type": "image/svg+xml",
       "purpose": "any maskable"
     }
   ],
-  "screenshots": [],
   "shortcuts": [
     {
       "name": "냉장고 열기",
       "short_name": "냉장고",
       "description": "냉장고 식재료 관리",
-      "url": "/?screen=fridge",
-      "icons": [{"src": "data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 96 96'><text y='.9em' font-size='90'>🧊</text></svg>", "sizes": "96x96"}]
+      "url": "/fridge",
+      "icons": [{"src": "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 96 96'%3E%3Ctext y='.9em' font-size='90'%3E🧊%3C/text%3E%3C/svg%3E", "sizes": "96x96"}]
     },
     {
-      "name": "매거진 보기",
-      "short_name": "매거진",
-      "description": "푸드 매거진 아티클",
-      "url": "/?screen=magazine",
-      "icons": [{"src": "data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 96 96'><text y='.9em' font-size='90'>📰</text></svg>", "sizes": "96x96"}]
+      "name": "레시피 보기",
+      "short_name": "레시피",
+      "description": "요리 레시피",
+      "url": "/recipe",
+      "icons": [{"src": "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 96 96'%3E%3Ctext y='.9em' font-size='90'%3E🍳%3C/text%3E%3C/svg%3E", "sizes": "96x96"}]
     }
   ]
 }

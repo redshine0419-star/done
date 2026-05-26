@@ -11,6 +11,13 @@ export const metadata: Metadata = {
     type: 'website',
     locale: 'ko_KR',
   },
+  icons: {
+    icon: [
+      { url: '/favicon.svg', type: 'image/svg+xml' },
+    ],
+    shortcut: '/favicon.svg',
+    apple: '/favicon.svg',
+  },
   robots: { index: true, follow: true },
 };
 

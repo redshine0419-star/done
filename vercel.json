@@ -4,10 +4,5 @@
       "path": "/api/generate-blog-post",
       "schedule": "0 9 * * 1"
     }
-  ],
-  "functions": {
-    "app/api/**": {
-      "runtime": "nodejs20.x"
-    }
-  }
+  ]
 }

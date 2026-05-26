@@ -12,9 +12,16 @@ function extractVideoId(url: string): string | null {
   return null;
 }
 
+function withTimeout(ms: number): AbortSignal {
+  const controller = new AbortController();
+  setTimeout(() => controller.abort(), ms);
+  return controller.signal;
+}
+
 export async function POST(req: NextRequest) {
   try {
-    const { youtube_url } = await req.json() as { youtube_url: string };
+    const body = await req.json() as { youtube_url?: string };
+    const youtube_url = body?.youtube_url;
     if (!youtube_url) {
       return NextResponse.json({ error: 'youtube_url is required' }, { status: 400 });
     }
@@ -29,31 +36,25 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'GEMINI_API_KEY가 설정되지 않았습니다.' }, { status: 500 });
     }
 
-    // Get video metadata via oEmbed (no API key needed)
-    // Properly encode the video URL as a query parameter
-    const videoUrl = encodeURIComponent(`https://www.youtube.com/watch?v=${videoId}`);
-    const oembedRes = await fetch(
-      `https://www.youtube.com/oembed?url=${videoUrl}&format=json`,
-      { signal: AbortSignal.timeout(5000) }
-    );
-
+    // Get video metadata via oEmbed — optional, continue without it if it fails
     let videoTitle = '';
     let channelName = '';
-
-    if (oembedRes.ok) {
-      const contentType = oembedRes.headers.get('content-type') ?? '';
-      if (contentType.includes('application/json') || contentType.includes('text/javascript')) {
+    try {
+      const videoUrl = encodeURIComponent(`https://www.youtube.com/watch?v=${videoId}`);
+      const oembedRes = await fetch(
+        `https://www.youtube.com/oembed?url=${videoUrl}&format=json`,
+        { signal: withTimeout(5000), cache: 'no-store' }
+      );
+      if (oembedRes.ok) {
+        const oembedText = await oembedRes.text();
         try {
-          const oembedData = await oembedRes.json() as { title?: string; author_name?: string };
+          const oembedData = JSON.parse(oembedText) as { title?: string; author_name?: string };
           videoTitle = oembedData.title ?? '';
           channelName = oembedData.author_name ?? '';
-        } catch {
-          // oEmbed parse failed, continue with empty metadata
-        }
+        } catch { /* ignore parse errors */ }
       }
-    }
+    } catch { /* ignore oEmbed errors, continue with Gemini */ }
 
-    // If oEmbed didn't give us a title, use a generic prompt
     const videoInfo = videoTitle
       ? `영상 제목: ${videoTitle}\n채널명: ${channelName}`
       : `유튜브 영상 ID: ${videoId}`;
@@ -82,55 +83,66 @@ ${videoInfo}
 - duration_sec은 해당 단계의 예상 시간(초)
 - 재료는 5-10개, 단계는 4-7개로 구성`;
 
-    const geminiRes = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`,
-      {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          contents: [{ parts: [{ text: prompt }] }],
-          generationConfig: { temperature: 0.7, maxOutputTokens: 2048 },
-        }),
-        signal: AbortSignal.timeout(25000),
+    let geminiText = '';
+    try {
+      const geminiRes = await fetch(
+        `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`,
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            contents: [{ parts: [{ text: prompt }] }],
+            generationConfig: { temperature: 0.7, maxOutputTokens: 2048 },
+          }),
+          signal: withTimeout(20000),
+          cache: 'no-store',
+        }
+      );
+
+      geminiText = await geminiRes.text();
+
+      if (!geminiRes.ok) {
+        return NextResponse.json(
+          { error: `Gemini API 오류 (${geminiRes.status}): ${geminiText.slice(0, 300)}` },
+          { status: 500 }
+        );
       }
-    );
+    } catch (fetchErr) {
+      const msg = fetchErr instanceof Error ? fetchErr.message : String(fetchErr);
+      if (msg.includes('abort') || msg.includes('timeout') || msg.includes('Abort')) {
+        return NextResponse.json({ error: 'AI 분석 시간이 초과되었습니다. 다시 시도해 주세요.' }, { status: 504 });
+      }
+      return NextResponse.json({ error: `네트워크 오류: ${msg}` }, { status: 500 });
+    }
 
-    if (!geminiRes.ok) {
-      const errText = await geminiRes.text().catch(() => '');
+    let geminiData: { candidates?: { content?: { parts?: { text?: string }[] } }[]; error?: { message?: string } };
+    try {
+      geminiData = JSON.parse(geminiText);
+    } catch {
       return NextResponse.json(
-        { error: `Gemini API 오류 (${geminiRes.status}): ${errText.slice(0, 200)}` },
+        { error: `Gemini 응답 파싱 실패: ${geminiText.slice(0, 200)}` },
         { status: 500 }
       );
     }
-
-    const geminiContentType = geminiRes.headers.get('content-type') ?? '';
-    if (!geminiContentType.includes('application/json')) {
-      const errText = await geminiRes.text().catch(() => '');
-      return NextResponse.json(
-        { error: `Gemini 응답 형식 오류: ${errText.slice(0, 200)}` },
-        { status: 500 }
-      );
-    }
-
-    const geminiData = await geminiRes.json() as {
-      candidates?: { content?: { parts?: { text?: string }[] } }[];
-      error?: { message?: string };
-    };
 
     if (geminiData.error) {
       return NextResponse.json({ error: `Gemini: ${geminiData.error.message}` }, { status: 500 });
     }
 
     const content = geminiData.candidates?.[0]?.content?.parts?.[0]?.text ?? '';
+    if (!content) {
+      return NextResponse.json({ error: 'AI 응답이 비어 있습니다. 다시 시도해 주세요.' }, { status: 500 });
+    }
+
     const jsonMatch = content.match(/\{[\s\S]*\}/);
     if (!jsonMatch) {
       return NextResponse.json(
-        { error: 'AI가 올바른 레시피 형식을 반환하지 않았습니다. 다시 시도해 주세요.' },
+        { error: `AI가 레시피 형식을 반환하지 않았습니다: ${content.slice(0, 200)}` },
         { status: 500 }
       );
     }
 
-    const recipe = JSON.parse(jsonMatch[0]) as {
+    let recipe: {
       title: string;
       story: string;
       servings: number;
@@ -138,6 +150,14 @@ ${videoInfo}
       ingredients: { name: string; base_amount: number; unit: string; type: string }[];
       steps: { burner: number | null; action: string; duration_sec: number; description: string }[];
     };
+    try {
+      recipe = JSON.parse(jsonMatch[0]);
+    } catch (parseErr) {
+      return NextResponse.json(
+        { error: `레시피 JSON 파싱 실패: ${(parseErr as Error).message}` },
+        { status: 500 }
+      );
+    }
 
     return NextResponse.json({
       recipe: {
@@ -151,13 +171,7 @@ ${videoInfo}
       },
     });
   } catch (err) {
-    if (err instanceof Error && err.name === 'TimeoutError') {
-      return NextResponse.json({ error: 'AI 분석 시간이 초과되었습니다. 다시 시도해 주세요.' }, { status: 504 });
-    }
-    if (err instanceof Error && err.name === 'AbortError') {
-      return NextResponse.json({ error: 'AI 분석 시간이 초과되었습니다. 다시 시도해 주세요.' }, { status: 504 });
-    }
     const message = err instanceof Error ? err.message : String(err);
-    return NextResponse.json({ error: message }, { status: 500 });
+    return NextResponse.json({ error: `오류: ${message}` }, { status: 500 });
   }
 }

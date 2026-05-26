@@ -51,9 +51,10 @@ export default function RecipeSubmitPage() {
   }
 
   async function safeJson<T>(res: Response): Promise<T | null> {
-    const ct = res.headers.get('content-type') ?? '';
-    if (!ct.includes('application/json') && !ct.includes('text/plain')) return null;
-    try { return await res.json() as T; } catch { return null; }
+    try {
+      const text = await res.text();
+      return JSON.parse(text) as T;
+    } catch { return null; }
   }
 
   async function handleCheck() {
@@ -104,12 +105,9 @@ export default function RecipeSubmitPage() {
         body: JSON.stringify({ youtube_url: rawUrl }),
       });
       const data = await safeJson<{ recipe?: AnalyzedRecipe; error?: string }>(res);
-      if (!data) {
-        setError(`서버 오류가 발생했습니다 (${res.status}). 잠시 후 다시 시도해 주세요.`);
-        return;
-      }
-      if (!data.recipe) {
-        setError(data.error ?? '분석에 실패했습니다.');
+      if (!data || !data.recipe) {
+        const errMsg = data?.error ?? `분석 중 오류가 발생했습니다 (상태 코드: ${res.status}). 잠시 후 다시 시도해 주세요.`;
+        setError(errMsg);
         return;
       }
       setRecipe(data.recipe);

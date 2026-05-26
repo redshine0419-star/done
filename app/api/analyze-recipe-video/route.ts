@@ -12,18 +12,12 @@ function extractVideoId(url: string): string | null {
   return null;
 }
 
-function withTimeout(ms: number): AbortSignal {
-  const controller = new AbortController();
-  setTimeout(() => controller.abort(), ms);
-  return controller.signal;
-}
-
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json() as { youtube_url?: string };
     const youtube_url = body?.youtube_url;
     if (!youtube_url) {
-      return NextResponse.json({ error: 'youtube_url is required' }, { status: 400 });
+      return NextResponse.json({ error: 'youtube_url이 필요합니다.' }, { status: 400 });
     }
 
     const videoId = extractVideoId(youtube_url);
@@ -36,24 +30,20 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'GEMINI_API_KEY가 설정되지 않았습니다.' }, { status: 500 });
     }
 
-    // Get video metadata via oEmbed — optional, continue without it if it fails
+    // oEmbed: video title & channel (optional — continue without it)
     let videoTitle = '';
     let channelName = '';
     try {
-      const videoUrl = encodeURIComponent(`https://www.youtube.com/watch?v=${videoId}`);
-      const oembedRes = await fetch(
-        `https://www.youtube.com/oembed?url=${videoUrl}&format=json`,
-        { signal: withTimeout(5000), cache: 'no-store' }
-      );
+      const oembedUrl = `https://www.youtube.com/oembed?url=${encodeURIComponent(`https://www.youtube.com/watch?v=${videoId}`)}&format=json`;
+      const oembedRes = await fetch(oembedUrl);
       if (oembedRes.ok) {
-        const oembedText = await oembedRes.text();
-        try {
-          const oembedData = JSON.parse(oembedText) as { title?: string; author_name?: string };
-          videoTitle = oembedData.title ?? '';
-          channelName = oembedData.author_name ?? '';
-        } catch { /* ignore parse errors */ }
+        const oembedData = await oembedRes.json() as { title?: string; author_name?: string };
+        videoTitle = oembedData.title ?? '';
+        channelName = oembedData.author_name ?? '';
       }
-    } catch { /* ignore oEmbed errors, continue with Gemini */ }
+    } catch {
+      // ignore — proceed with Gemini using video ID only
+    }
 
     const videoInfo = videoTitle
       ? `영상 제목: ${videoTitle}\n채널명: ${channelName}`
@@ -83,66 +73,55 @@ ${videoInfo}
 - duration_sec은 해당 단계의 예상 시간(초)
 - 재료는 5-10개, 단계는 4-7개로 구성`;
 
-    let geminiText = '';
-    try {
-      const geminiRes = await fetch(
-        `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`,
-        {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            contents: [{ parts: [{ text: prompt }] }],
-            generationConfig: { temperature: 0.7, maxOutputTokens: 2048 },
-          }),
-          signal: withTimeout(20000),
-          cache: 'no-store',
-        }
-      );
-
-      geminiText = await geminiRes.text();
-
-      if (!geminiRes.ok) {
-        return NextResponse.json(
-          { error: `Gemini API 오류 (${geminiRes.status}): ${geminiText.slice(0, 300)}` },
-          { status: 500 }
-        );
+    const geminiRes = await fetch(
+      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`,
+      {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          contents: [{ parts: [{ text: prompt }] }],
+          generationConfig: { temperature: 0.7, maxOutputTokens: 2048 },
+        }),
       }
-    } catch (fetchErr) {
-      const msg = fetchErr instanceof Error ? fetchErr.message : String(fetchErr);
-      if (msg.includes('abort') || msg.includes('timeout') || msg.includes('Abort')) {
-        return NextResponse.json({ error: 'AI 분석 시간이 초과되었습니다. 다시 시도해 주세요.' }, { status: 504 });
-      }
-      return NextResponse.json({ error: `네트워크 오류: ${msg}` }, { status: 500 });
-    }
+    );
 
-    let geminiData: { candidates?: { content?: { parts?: { text?: string }[] } }[]; error?: { message?: string } };
-    try {
-      geminiData = JSON.parse(geminiText);
-    } catch {
+    if (!geminiRes.ok) {
+      const errText = await geminiRes.text().catch(() => '');
       return NextResponse.json(
-        { error: `Gemini 응답 파싱 실패: ${geminiText.slice(0, 200)}` },
+        { error: `Gemini API 오류 (${geminiRes.status}): ${errText.slice(0, 300)}` },
         { status: 500 }
       );
     }
 
+    const geminiData = await geminiRes.json() as {
+      candidates?: { content?: { parts?: { text?: string }[] } }[];
+      error?: { message?: string };
+    };
+
     if (geminiData.error) {
-      return NextResponse.json({ error: `Gemini: ${geminiData.error.message}` }, { status: 500 });
+      return NextResponse.json(
+        { error: `Gemini 오류: ${geminiData.error.message}` },
+        { status: 500 }
+      );
     }
 
     const content = geminiData.candidates?.[0]?.content?.parts?.[0]?.text ?? '';
     if (!content) {
-      return NextResponse.json({ error: 'AI 응답이 비어 있습니다. 다시 시도해 주세요.' }, { status: 500 });
+      return NextResponse.json(
+        { error: 'AI 응답이 비어 있습니다. 다시 시도해 주세요.' },
+        { status: 500 }
+      );
     }
 
     const jsonMatch = content.match(/\{[\s\S]*\}/);
     if (!jsonMatch) {
       return NextResponse.json(
-        { error: `AI가 레시피 형식을 반환하지 않았습니다: ${content.slice(0, 200)}` },
+        { error: `AI가 레시피 형식으로 응답하지 않았습니다: ${content.slice(0, 150)}` },
         { status: 500 }
       );
     }
 
-    let recipe: {
+    const recipe = JSON.parse(jsonMatch[0]) as {
       title: string;
       story: string;
       servings: number;
@@ -150,14 +129,6 @@ ${videoInfo}
       ingredients: { name: string; base_amount: number; unit: string; type: string }[];
       steps: { burner: number | null; action: string; duration_sec: number; description: string }[];
     };
-    try {
-      recipe = JSON.parse(jsonMatch[0]);
-    } catch (parseErr) {
-      return NextResponse.json(
-        { error: `레시피 JSON 파싱 실패: ${(parseErr as Error).message}` },
-        { status: 500 }
-      );
-    }
 
     return NextResponse.json({
       recipe: {
@@ -172,6 +143,6 @@ ${videoInfo}
     });
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err);
-    return NextResponse.json({ error: `오류: ${message}` }, { status: 500 });
+    return NextResponse.json({ error: message }, { status: 500 });
   }
 }

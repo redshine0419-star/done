@@ -5,17 +5,15 @@ function db() {
   return neon(process.env.DATABASE_URL!);
 }
 
-function requireAdmin(req: NextRequest): boolean {
+function isAdmin(req: NextRequest): boolean {
   const secret = req.headers.get('x-admin-secret');
   return Boolean(secret && secret === process.env.ADMIN_SECRET);
 }
 
 type Params = { id: string };
 
+// Public PUT: wiki-style recipe replacement (anyone can update content)
 export async function PUT(req: NextRequest, { params }: { params: Promise<Params> }) {
-  if (!requireAdmin(req)) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-  }
   try {
     const sql = db();
     const { id } = await params;
@@ -25,18 +23,46 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<Params
       servings?: number;
       youtube_id?: string;
       youtube_credit?: string;
+      thumbnail?: string;
+      ingredients?: { ingredient_id: string; name: string; base_amount: number; unit: string; type: string }[];
+      steps?: { burner: number | null; action: string; duration_sec: number; description: string }[];
     };
 
     await sql`
       UPDATE recipes SET
-        title         = COALESCE(${body.title ?? null}, title),
-        story         = COALESCE(${body.story ?? null}, story),
-        servings      = COALESCE(${body.servings ?? null}, servings),
-        youtube_id    = COALESCE(${body.youtube_id ?? null}, youtube_id),
+        title          = COALESCE(${body.title ?? null}, title),
+        story          = COALESCE(${body.story ?? null}, story),
+        servings       = COALESCE(${body.servings ?? null}, servings),
+        youtube_id     = COALESCE(${body.youtube_id ?? null}, youtube_id),
         youtube_credit = COALESCE(${body.youtube_credit ?? null}, youtube_credit),
-        updated_at    = NOW()
+        thumbnail      = COALESCE(${body.thumbnail ?? null}, thumbnail),
+        updated_at     = NOW()
       WHERE id = ${id}
     `;
+
+    // Replace ingredients and steps if provided
+    if (body.ingredients) {
+      await sql`DELETE FROM recipe_ingredients WHERE recipe_id = ${id}`;
+      for (let i = 0; i < body.ingredients.length; i++) {
+        const ing = body.ingredients[i];
+        await sql`
+          INSERT INTO recipe_ingredients (recipe_id, ingredient_id, name, base_amount, unit, type, sort_order)
+          VALUES (${id}, ${ing.ingredient_id || ing.name}, ${ing.name}, ${ing.base_amount}, ${ing.unit}, ${ing.type}, ${i})
+        `;
+      }
+    }
+
+    if (body.steps) {
+      await sql`DELETE FROM recipe_steps WHERE recipe_id = ${id}`;
+      for (let i = 0; i < body.steps.length; i++) {
+        const step = body.steps[i];
+        await sql`
+          INSERT INTO recipe_steps (recipe_id, burner, action, duration_sec, description, sort_order)
+          VALUES (${id}, ${step.burner ?? null}, ${step.action}, ${step.duration_sec}, ${step.description ?? ''}, ${i})
+        `;
+      }
+    }
+
     return NextResponse.json({ ok: true });
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err);
@@ -44,8 +70,9 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<Params
   }
 }
 
+// Admin only: delete
 export async function DELETE(req: NextRequest, { params }: { params: Promise<Params> }) {
-  if (!requireAdmin(req)) {
+  if (!isAdmin(req)) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
   try {
@@ -59,8 +86,9 @@ export async function DELETE(req: NextRequest, { params }: { params: Promise<Par
   }
 }
 
+// Admin only: status change
 export async function PATCH(req: NextRequest, { params }: { params: Promise<Params> }) {
-  if (!requireAdmin(req)) {
+  if (!isAdmin(req)) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
   try {

@@ -28,8 +28,30 @@ function mapRow(row: Record<string, unknown>) {
 export async function GET(req: NextRequest) {
   try {
     const sql = db();
+    const { searchParams } = new URL(req.url);
     const adminSecret = req.headers.get('x-admin-secret');
     const isAdmin = adminSecret && adminSecret === process.env.ADMIN_SECRET;
+
+    // Duplicate check: ?youtube_id=xxx
+    const checkYoutubeId = searchParams.get('youtube_id');
+    if (checkYoutubeId) {
+      const rows = await sql`
+        SELECT id, title, youtube_id, youtube_credit, status, thumbnail, servings
+        FROM recipes WHERE youtube_id = ${checkYoutubeId} LIMIT 1
+      `;
+      return NextResponse.json(rows[0] ?? null);
+    }
+
+    // Title check: ?title=xxx
+    const checkTitle = searchParams.get('title');
+    if (checkTitle) {
+      const rows = await sql`
+        SELECT id, title, youtube_id, youtube_credit, status, thumbnail, servings
+        FROM recipes WHERE LOWER(title) = LOWER(${checkTitle}) LIMIT 1
+      `;
+      return NextResponse.json(rows[0] ?? null);
+    }
+
     const statusFilter = isAdmin ? ['draft', 'published', 'rejected'] : ['published'];
 
     const recipes = await sql`
@@ -82,6 +104,14 @@ export async function POST(req: NextRequest) {
       steps: { burner: number | null; action: string; duration_sec: number; description: string }[];
     };
 
+    // Final duplicate guard
+    if (body.youtube_id) {
+      const existing = await sql`SELECT id FROM recipes WHERE youtube_id = ${body.youtube_id} LIMIT 1`;
+      if (existing.length > 0) {
+        return NextResponse.json({ error: '이미 등록된 유튜브 영상입니다.', existing_id: existing[0].id }, { status: 409 });
+      }
+    }
+
     const id = `db_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`;
 
     await sql`
@@ -93,7 +123,7 @@ export async function POST(req: NextRequest) {
         ${body.servings ?? 2},
         ${body.youtube_id ?? null},
         ${body.youtube_credit ?? ''},
-        'draft',
+        'published',
         'anonymous'
       )
     `;
@@ -114,7 +144,7 @@ export async function POST(req: NextRequest) {
       `;
     }
 
-    return NextResponse.json({ id, status: 'draft' }, { status: 201 });
+    return NextResponse.json({ id, status: 'published' }, { status: 201 });
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err);
     return NextResponse.json({ error: message }, { status: 500 });

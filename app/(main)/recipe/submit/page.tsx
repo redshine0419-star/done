@@ -374,10 +374,37 @@ export default function RecipeSubmitPage() {
                     className="w-20 h-10 px-3 rounded-xl border text-center"
                     style={{ borderColor: 'var(--border)', background: 'var(--bg)', color: 'var(--text-1)' }}
                   />
-                  {recipe.youtube_credit && (
-                    <span className="text-[12px]" style={{ color: 'var(--text-3)' }}>출처: {recipe.youtube_credit}</span>
-                  )}
                 </div>
+
+                {/* Video preview — let user confirm or remove before saving */}
+                {recipe.youtube_id ? (
+                  <div className="rounded-xl overflow-hidden" style={{ border: '1px solid var(--border)' }}>
+                    <img
+                      src={`https://img.youtube.com/vi/${recipe.youtube_id}/hqdefault.jpg`}
+                      alt="영상 미리보기"
+                      className="w-full object-cover"
+                      style={{ maxHeight: '180px' }}
+                    />
+                    <div className="px-3 py-2 flex items-center gap-2" style={{ background: 'var(--bg)' }}>
+                      <PlayCircle size={13} color="#DC2626" />
+                      <span className="text-[12px] flex-1 truncate" style={{ color: 'var(--text-3)' }}>
+                        {recipe.youtube_credit || '출처 미확인'}
+                      </span>
+                      <button
+                        type="button"
+                        onClick={() => setRecipe(r => r ? { ...r, youtube_id: '', youtube_credit: '' } : r)}
+                        className="shrink-0 text-[11px] font-bold px-2 py-0.5 rounded-lg"
+                        style={{ background: '#FEE2E2', color: '#DC2626' }}
+                      >
+                        영상 제거
+                      </button>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="rounded-xl px-3 py-2 text-[12px]" style={{ background: 'var(--bg)', color: 'var(--text-3)', border: '1px solid var(--border)' }}>
+                    조리 영상을 찾지 못했습니다. 유튜브 검색 링크가 대신 표시됩니다.
+                  </div>
+                )}
 
                 <div>
                   <p className="text-[13px] font-bold mb-2" style={{ color: 'var(--text-2)' }}>

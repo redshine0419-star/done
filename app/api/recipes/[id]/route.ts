@@ -35,8 +35,8 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<Params
         title          = COALESCE(${body.title ?? null}, title),
         story          = COALESCE(${body.story ?? null}, story),
         servings       = COALESCE(${body.servings ?? null}, servings),
-        youtube_id     = COALESCE(${body.youtube_id ?? null}, youtube_id),
-        youtube_credit = COALESCE(${body.youtube_credit ?? null}, youtube_credit),
+        youtube_id     = ${body.youtube_id ?? null},
+        youtube_credit = ${body.youtube_credit ?? ''},
         thumbnail      = COALESCE(${body.thumbnail ?? null}, thumbnail),
         updated_at     = NOW()
       WHERE id = ${id}

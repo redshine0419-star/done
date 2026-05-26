@@ -13,6 +13,19 @@ export async function GET() {
   });
 }
 
+function isValidCookingVideo(title: string, channel: string): boolean {
+  if (!title) return false;
+  const text = `${title} ${channel}`;
+  // Reject phone numbers, "ad upload", "advertisement"
+  const spamPatterns = [
+    /\d{3}[-.\s]?\d{3,4}[-.\s]?\d{4}/,
+    /\bad[\s_-]*(upload|channel)\b/i,
+    /advertisement/i,
+    /sponsored\s+by/i,
+  ];
+  return !spamPatterns.some(p => p.test(text));
+}
+
 function extractVideoId(url: string): string | null {
   const patterns = [
     /(?:youtube\.com\/watch\?v=|youtu\.be\/|youtube\.com\/embed\/)([A-Za-z0-9_-]{11})/,
@@ -145,11 +158,13 @@ ${videoInfo}
       steps: { burner: number | null; action: string; duration_sec: number; description: string }[];
     };
 
+    const includeVideo = isValidCookingVideo(videoTitle, channelName);
+
     return NextResponse.json({
       recipe: {
         ...recipe,
-        youtube_id: videoId,
-        youtube_credit: channelName,
+        youtube_id: includeVideo ? videoId : undefined,
+        youtube_credit: includeVideo ? channelName : '',
         ingredients: recipe.ingredients.map((ing, i) => ({
           ...ing,
           ingredient_id: `auto_${i}`,

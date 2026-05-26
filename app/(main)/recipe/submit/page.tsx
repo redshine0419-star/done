@@ -50,6 +50,12 @@ export default function RecipeSubmitPage() {
     }
   }
 
+  async function safeJson<T>(res: Response): Promise<T | null> {
+    const ct = res.headers.get('content-type') ?? '';
+    if (!ct.includes('application/json') && !ct.includes('text/plain')) return null;
+    try { return await res.json() as T; } catch { return null; }
+  }
+
   async function handleCheck() {
     const trimmed = url.trim();
     if (!trimmed) return;
@@ -66,11 +72,16 @@ export default function RecipeSubmitPage() {
     setExistingByTitle(null);
 
     try {
-      const res = await fetch(`/api/recipes?youtube_id=${encodeURIComponent(videoId)}`);
-      const data = await res.json() as ExistingRecipe | null;
-      if (data && data.id) {
-        setExistingById(data);
-        setUpdateTargetId(data.id);
+      // Duplicate check — skip gracefully if DB is unavailable
+      let existing: ExistingRecipe | null = null;
+      try {
+        const res = await fetch(`/api/recipes?youtube_id=${encodeURIComponent(videoId)}`);
+        existing = await safeJson<ExistingRecipe>(res);
+      } catch { /* ignore duplicate check failure */ }
+
+      if (existing && existing.id) {
+        setExistingById(existing);
+        setUpdateTargetId(existing.id);
         setMode('update');
       } else {
         setMode('new');
@@ -83,7 +94,7 @@ export default function RecipeSubmitPage() {
     }
   }
 
-  async function runAnalysis(rawUrl: string, videoId?: string) {
+  async function runAnalysis(rawUrl: string) {
     setAnalyzing(true);
     setError('');
     try {
@@ -92,7 +103,11 @@ export default function RecipeSubmitPage() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ youtube_url: rawUrl }),
       });
-      const data = await res.json() as { recipe?: AnalyzedRecipe; error?: string };
+      const data = await safeJson<{ recipe?: AnalyzedRecipe; error?: string }>(res);
+      if (!data) {
+        setError(`서버 오류가 발생했습니다 (${res.status}). 잠시 후 다시 시도해 주세요.`);
+        return;
+      }
       if (!data.recipe) {
         setError(data.error ?? '분석에 실패했습니다.');
         return;
@@ -101,11 +116,13 @@ export default function RecipeSubmitPage() {
 
       // Check title duplicate (only when creating new)
       if (mode === 'new' || !updateTargetId) {
-        const titleRes = await fetch(`/api/recipes?title=${encodeURIComponent(data.recipe.title)}`);
-        const titleData = await titleRes.json() as ExistingRecipe | null;
-        if (titleData && titleData.id) {
-          setExistingByTitle(titleData);
-        }
+        try {
+          const titleRes = await fetch(`/api/recipes?title=${encodeURIComponent(data.recipe.title)}`);
+          const titleData = await safeJson<ExistingRecipe>(titleRes);
+          if (titleData && titleData.id) {
+            setExistingByTitle(titleData);
+          }
+        } catch { /* ignore */ }
       }
     } catch (e) {
       setError((e as Error).message);

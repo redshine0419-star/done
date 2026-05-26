@@ -24,26 +24,43 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: '유효한 유튜브 URL이 아닙니다.' }, { status: 400 });
     }
 
-    // Get video metadata via oEmbed (no API key needed)
-    const oembedRes = await fetch(
-      `https://www.youtube.com/oembed?url=https://www.youtube.com/watch?v=${videoId}&format=json`
-    );
-    if (!oembedRes.ok) {
-      return NextResponse.json({ error: '영상 정보를 가져올 수 없습니다. URL을 확인해 주세요.' }, { status: 400 });
-    }
-    const oembedData = await oembedRes.json() as { title: string; author_name: string };
-    const videoTitle = oembedData.title;
-    const channelName = oembedData.author_name;
-
     const apiKey = process.env.GEMINI_API_KEY;
     if (!apiKey) {
-      return NextResponse.json({ error: 'GEMINI_API_KEY not configured' }, { status: 500 });
+      return NextResponse.json({ error: 'GEMINI_API_KEY가 설정되지 않았습니다.' }, { status: 500 });
     }
+
+    // Get video metadata via oEmbed (no API key needed)
+    // Properly encode the video URL as a query parameter
+    const videoUrl = encodeURIComponent(`https://www.youtube.com/watch?v=${videoId}`);
+    const oembedRes = await fetch(
+      `https://www.youtube.com/oembed?url=${videoUrl}&format=json`,
+      { signal: AbortSignal.timeout(5000) }
+    );
+
+    let videoTitle = '';
+    let channelName = '';
+
+    if (oembedRes.ok) {
+      const contentType = oembedRes.headers.get('content-type') ?? '';
+      if (contentType.includes('application/json') || contentType.includes('text/javascript')) {
+        try {
+          const oembedData = await oembedRes.json() as { title?: string; author_name?: string };
+          videoTitle = oembedData.title ?? '';
+          channelName = oembedData.author_name ?? '';
+        } catch {
+          // oEmbed parse failed, continue with empty metadata
+        }
+      }
+    }
+
+    // If oEmbed didn't give us a title, use a generic prompt
+    const videoInfo = videoTitle
+      ? `영상 제목: ${videoTitle}\n채널명: ${channelName}`
+      : `유튜브 영상 ID: ${videoId}`;
 
     const prompt = `당신은 한식 레시피 전문가입니다. 아래 유튜브 영상 정보를 참고해서, 해당 요리를 독자적으로 재현한 레시피를 JSON 형식으로 작성해 주세요. 영상 내용을 직접 복사하지 말고, 일반적으로 알려진 조리법을 바탕으로 창작해 주세요.
 
-영상 제목: ${videoTitle}
-채널명: ${channelName}
+${videoInfo}
 
 반드시 다음 JSON 형식으로만 응답하세요. 마크다운 코드블록 없이 순수 JSON만:
 {
@@ -74,21 +91,43 @@ export async function POST(req: NextRequest) {
           contents: [{ parts: [{ text: prompt }] }],
           generationConfig: { temperature: 0.7, maxOutputTokens: 2048 },
         }),
+        signal: AbortSignal.timeout(25000),
       }
     );
 
-    const rawText = await geminiRes.text();
-    if (!geminiRes.ok || rawText.trimStart().startsWith('<')) {
-      throw new Error(`Gemini API error (${geminiRes.status}): ${rawText.slice(0, 200)}`);
+    if (!geminiRes.ok) {
+      const errText = await geminiRes.text().catch(() => '');
+      return NextResponse.json(
+        { error: `Gemini API 오류 (${geminiRes.status}): ${errText.slice(0, 200)}` },
+        { status: 500 }
+      );
     }
 
-    const geminiData = JSON.parse(rawText) as {
+    const geminiContentType = geminiRes.headers.get('content-type') ?? '';
+    if (!geminiContentType.includes('application/json')) {
+      const errText = await geminiRes.text().catch(() => '');
+      return NextResponse.json(
+        { error: `Gemini 응답 형식 오류: ${errText.slice(0, 200)}` },
+        { status: 500 }
+      );
+    }
+
+    const geminiData = await geminiRes.json() as {
       candidates?: { content?: { parts?: { text?: string }[] } }[];
+      error?: { message?: string };
     };
+
+    if (geminiData.error) {
+      return NextResponse.json({ error: `Gemini: ${geminiData.error.message}` }, { status: 500 });
+    }
+
     const content = geminiData.candidates?.[0]?.content?.parts?.[0]?.text ?? '';
     const jsonMatch = content.match(/\{[\s\S]*\}/);
     if (!jsonMatch) {
-      throw new Error('Gemini가 올바른 JSON을 반환하지 않았습니다.');
+      return NextResponse.json(
+        { error: 'AI가 올바른 레시피 형식을 반환하지 않았습니다. 다시 시도해 주세요.' },
+        { status: 500 }
+      );
     }
 
     const recipe = JSON.parse(jsonMatch[0]) as {
@@ -112,6 +151,12 @@ export async function POST(req: NextRequest) {
       },
     });
   } catch (err) {
+    if (err instanceof Error && err.name === 'TimeoutError') {
+      return NextResponse.json({ error: 'AI 분석 시간이 초과되었습니다. 다시 시도해 주세요.' }, { status: 504 });
+    }
+    if (err instanceof Error && err.name === 'AbortError') {
+      return NextResponse.json({ error: 'AI 분석 시간이 초과되었습니다. 다시 시도해 주세요.' }, { status: 504 });
+    }
     const message = err instanceof Error ? err.message : String(err);
     return NextResponse.json({ error: message }, { status: 500 });
   }

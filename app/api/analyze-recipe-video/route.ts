@@ -93,7 +93,7 @@ ${videoInfo}
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           contents: [{ parts: [{ text: prompt }] }],
-          generationConfig: { temperature: 0.7, maxOutputTokens: 2048 },
+          generationConfig: { temperature: 0.7, maxOutputTokens: 8192 },
         }),
       }
     );
@@ -126,7 +126,9 @@ ${videoInfo}
       );
     }
 
-    const jsonMatch = content.match(/\{[\s\S]*\}/);
+    // Strip markdown code fences if present, then find outermost JSON object
+    const stripped = content.replace(/^```(?:json)?\s*/i, '').replace(/\s*```\s*$/i, '').trim();
+    const jsonMatch = stripped.match(/\{[\s\S]*\}/);
     if (!jsonMatch) {
       return NextResponse.json(
         { error: `AI가 레시피 형식으로 응답하지 않았습니다: ${content.slice(0, 150)}` },
@@ -134,7 +136,7 @@ ${videoInfo}
       );
     }
 
-    const recipe = JSON.parse(jsonMatch[0]) as {
+    const recipe = JSON.parse(jsonMatch[0].trim()) as {
       title: string;
       story: string;
       servings: number;

@@ -1,7 +1,7 @@
 import type { NextConfig } from 'next';
 
 const nextConfig: NextConfig = {
-  // Image optimization, etc. can be added here
+  serverExternalPackages: ['@neondatabase/serverless'],
 };
 
 export default nextConfig;

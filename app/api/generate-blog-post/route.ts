@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { neon } from '@neondatabase/serverless';
 
+export const runtime = 'edge';
+
 interface Recipe {
   id: string;
   title: string;

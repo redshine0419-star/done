@@ -1,6 +1,8 @@
 import { NextResponse } from 'next/server';
 import { neon } from '@neondatabase/serverless';
 
+export const runtime = 'edge';
+
 export async function GET() {
   try {
     const sql = neon(process.env.DATABASE_URL!);

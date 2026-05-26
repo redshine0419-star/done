@@ -1,12 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server';
 
-// Diagnostic: GET /api/analyze-recipe-video → check env vars
 export async function GET() {
   return NextResponse.json({
+    handler: 'analyze-recipe-video-GET-v3',
     hasGeminiKey: !!process.env.GEMINI_API_KEY,
     geminiKeyPrefix: process.env.GEMINI_API_KEY?.slice(0, 6) ?? 'NOT_SET',
     hasDatabaseUrl: !!process.env.DATABASE_URL,
     nodeVersion: process.version,
+    ts: Date.now(),
   });
 }
 

@@ -25,7 +25,7 @@ export async function POST(req: NextRequest) {
   if (!image) return NextResponse.json({ error: 'image required' }, { status: 400 });
 
   const apiKey = process.env.GEMINI_API_KEY!;
-  const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`;
+  const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`;
 
   try {
     const geminiRes = await fetch(url, {

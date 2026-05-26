@@ -3,6 +3,7 @@ import { useState } from 'react';
 import Link from 'next/link';
 import { ChevronDown, Clock, Users, Zap, Check, X, ExternalLink } from 'lucide-react';
 import type { Recipe, FridgeItem } from '@/types';
+import { ingredientMatches } from '@/utils/ingredientMatch';
 
 interface Props {
   recipe: Recipe;
@@ -20,7 +21,7 @@ function getTimings(recipe: Recipe) {
 
 function getMatchInfo(recipe: Recipe, fridgeItems: FridgeItem[]) {
   const mains = recipe.ingredients.filter(i => i.type === 'main');
-  const have = mains.filter(ing => fridgeItems.some(f => f.ingredient_id === ing.ingredient_id));
+  const have = mains.filter(ing => fridgeItems.some(f => ingredientMatches(f, ing)));
   const rate = mains.length === 0 ? 100 : Math.round((have.length / mains.length) * 100);
   return { rate, have: have.length, total: mains.length };
 }
@@ -146,7 +147,7 @@ export function RecipeCard({ recipe, fridgeItems, onStart }: Props) {
             <p className="text-[12px] font-bold mb-2" style={{ color: 'var(--text-3)' }}>주재료</p>
             <div className="space-y-1.5">
               {recipe.ingredients.filter(i => i.type === 'main').map(ing => {
-                const owned = fridgeItems.some(f => f.ingredient_id === ing.ingredient_id);
+                const owned = fridgeItems.some(f => ingredientMatches(f, ing));
                 return (
                   <div key={ing.ingredient_id} className="flex items-center gap-2.5">
                     <div className="w-5 h-5 rounded-full flex items-center justify-center shrink-0"

@@ -8,18 +8,10 @@ import { RecipeCard } from '@/components/recipes/RecipeCard';
 import { TastePanel } from '@/components/recipe/TastePanel';
 import { useApp } from '@/context/AppContext';
 import { useRecipes } from '@/hooks/useRecipes';
-import type { Recipe, FridgeItem } from '@/types';
+import { getMatchRate } from '@/utils/ingredientMatch';
+import type { Recipe } from '@/types';
 
 type Filter = 'all' | 'single' | 'combo';
-
-function getMatchRate(recipe: Recipe, fridgeItems: FridgeItem[]): number {
-  const mains = recipe.ingredients.filter(i => i.type === 'main');
-  if (mains.length === 0) return 100;
-  const have = mains.filter(ing =>
-    fridgeItems.some(f => f.ingredient_id === ing.ingredient_id)
-  ).length;
-  return Math.round((have / mains.length) * 100);
-}
 
 export default function RecipePage() {
   const { state, dispatch } = useApp();

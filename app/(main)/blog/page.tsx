@@ -71,9 +71,13 @@ export default function BlogListPage() {
           </div>
         )}
 
-        {!loading && !error && posts.map(post => (
-          <BlogCard key={post.id} post={post} />
-        ))}
+        {!loading && !error && (
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {posts.map(post => (
+              <BlogCard key={post.id} post={post} />
+            ))}
+          </div>
+        )}
 
         {!loading && !error && posts.length === 0 && (
           <div className="text-center py-12 text-gray-400">

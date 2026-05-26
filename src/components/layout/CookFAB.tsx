@@ -15,7 +15,7 @@ export function CookFAB() {
     <button
       onClick={() => router.push('/cook')}
       aria-label="조리 화면으로 이동"
-      className="fixed bottom-[76px] right-4 z-50 w-14 h-14 rounded-full shadow-lg flex items-center justify-center touch-manipulation transition-all active:scale-95"
+      className="fixed bottom-[76px] md:bottom-6 right-4 md:right-6 z-50 w-14 h-14 rounded-full shadow-lg flex items-center justify-center touch-manipulation transition-all active:scale-95"
       style={{
         background: 'var(--brand)',
         boxShadow: cs.isRunning

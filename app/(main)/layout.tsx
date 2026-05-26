@@ -1,11 +1,13 @@
-import { BottomNav } from '@/components/layout/BottomNav';
+import { NavBar } from '@/components/layout/NavBar';
 import { CookFAB } from '@/components/layout/CookFAB';
 
 export default function MainLayout({ children }: { children: React.ReactNode }) {
   return (
-    <div className="relative min-h-dvh max-w-md mx-auto bg-gray-50">
-      {children}
-      <BottomNav />
+    <div className="relative min-h-dvh" style={{ background: 'var(--bg)' }}>
+      <NavBar />
+      <div className="md:pl-[220px]">
+        {children}
+      </div>
       <CookFAB />
     </div>
   );

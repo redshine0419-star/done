@@ -96,7 +96,11 @@ export default async function RecipeDetailPage({ params }: { params: Promise<Par
         )}
       </header>
 
-      <article className="px-5 py-5 space-y-6 pb-12">
+      <article className="px-5 py-5 pb-12 md:grid md:grid-cols-[1fr_1.2fr] md:gap-8 md:items-start">
+
+        {/* ── Left column ── */}
+        <div className="space-y-6">
+
         {/* Hero card */}
         <div className="rounded-3xl overflow-hidden"
              style={{ background: 'linear-gradient(135deg, #FEF0E8 0%, #FDE4D0 100%)', border: '1px solid rgba(201,75,42,0.15)' }}>
@@ -144,6 +148,35 @@ export default async function RecipeDetailPage({ params }: { params: Promise<Par
             </Link>
           </div>
         )}
+
+        {/* Servings scaler + ingredients (client component) */}
+        <ServingsScaler baseServings={recipe.servings} ingredients={recipe.ingredients} />
+
+        {/* Combo → sub-recipe links */}
+        {relatedSingles.length > 0 && (
+          <section>
+            <h2 className="text-[17px] font-black mb-3" style={{ color: 'var(--text-1)' }}>이 코스의 구성 레시피</h2>
+            <div className="space-y-2">
+              {relatedSingles.map(sub => sub && (
+                <Link key={sub.id} href={`/recipe/${sub.id}`}
+                      className="flex items-center gap-3 rounded-2xl px-4 py-3 touch-manipulation"
+                      style={{ background: 'var(--surface)', border: '1px solid var(--border)' }}>
+                  <span className="text-2xl">{sub.thumbnail}</span>
+                  <div className="flex-1">
+                    <p className="font-bold text-[14px]" style={{ color: 'var(--text-1)' }}>{sub.title}</p>
+                    <p className="text-[12px] mt-0.5 line-clamp-1" style={{ color: 'var(--text-3)' }}>{sub.story}</p>
+                  </div>
+                  <ArrowLeft size={16} color="var(--text-3)" strokeWidth={2} style={{ transform: 'rotate(180deg)' }} />
+                </Link>
+              ))}
+            </div>
+          </section>
+        )}
+
+        </div>{/* end left column */}
+
+        {/* ── Right column ── */}
+        <div className="space-y-6 mt-6 md:mt-0">
 
         {/* Story */}
         <p className="text-[14px] leading-[1.8]" style={{ color: 'var(--text-2)' }}>{recipe.story}</p>
@@ -193,30 +226,6 @@ export default async function RecipeDetailPage({ params }: { params: Promise<Par
           )}
         </section>
 
-        {/* Servings scaler + ingredients (client component) */}
-        <ServingsScaler baseServings={recipe.servings} ingredients={recipe.ingredients} />
-
-        {/* Combo → sub-recipe links */}
-        {relatedSingles.length > 0 && (
-          <section>
-            <h2 className="text-[17px] font-black mb-3" style={{ color: 'var(--text-1)' }}>이 코스의 구성 레시피</h2>
-            <div className="space-y-2">
-              {relatedSingles.map(sub => sub && (
-                <Link key={sub.id} href={`/recipe/${sub.id}`}
-                      className="flex items-center gap-3 rounded-2xl px-4 py-3 touch-manipulation"
-                      style={{ background: 'var(--surface)', border: '1px solid var(--border)' }}>
-                  <span className="text-2xl">{sub.thumbnail}</span>
-                  <div className="flex-1">
-                    <p className="font-bold text-[14px]" style={{ color: 'var(--text-1)' }}>{sub.title}</p>
-                    <p className="text-[12px] mt-0.5 line-clamp-1" style={{ color: 'var(--text-3)' }}>{sub.story}</p>
-                  </div>
-                  <ArrowLeft size={16} color="var(--text-3)" strokeWidth={2} style={{ transform: 'rotate(180deg)' }} />
-                </Link>
-              ))}
-            </div>
-          </section>
-        )}
-
         {/* Steps */}
         <section>
           <h2 className="text-[17px] font-black mb-3" style={{ color: 'var(--text-1)' }}>조리 순서</h2>
@@ -256,6 +265,8 @@ export default async function RecipeDetailPage({ params }: { params: Promise<Par
         <div className="pt-2">
           <StartCookingButton recipeId={recipe.id} isCombo={recipe.isCombo} />
         </div>
+
+        </div>{/* end right column */}
       </article>
     </div>
   );

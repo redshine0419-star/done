@@ -2,9 +2,10 @@
 import { useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { Plus } from 'lucide-react';
+import { Plus, Search } from 'lucide-react';
 import { ScreenWrapper } from '@/components/layout/ScreenWrapper';
 import { RecipeCard } from '@/components/recipes/RecipeCard';
+import { TastePanel } from '@/components/recipe/TastePanel';
 import { useApp } from '@/context/AppContext';
 import { useRecipes } from '@/hooks/useRecipes';
 import type { Recipe, FridgeItem } from '@/types';
@@ -67,6 +68,7 @@ export default function RecipePage() {
     <ScreenWrapper title="레시피" subtitle={subtitle} action={addButton}>
       <div className="space-y-4">
 
+        {/* Stats row */}
         {fridgeItems.length > 0 && (
           <div className="grid grid-cols-3 gap-2 text-center">
             <div className="bg-green-50 rounded-xl p-3">
@@ -100,24 +102,33 @@ export default function RecipePage() {
           </div>
         )}
 
+        {/* Search */}
         <div className="relative">
-          <span className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400">🔍</span>
+          <Search size={16} color="var(--text-3)" className="absolute left-4 top-1/2 -translate-y-1/2" />
           <input
             value={query}
             onChange={e => setQuery(e.target.value)}
             placeholder="레시피 검색"
-            className="w-full h-12 pl-10 pr-4 rounded-2xl border border-gray-200 bg-white text-sm"
+            className="w-full h-12 pl-10 pr-4 rounded-2xl text-sm"
+            style={{ border: '1px solid var(--border)', background: 'var(--surface)', color: 'var(--text-1)' }}
           />
         </div>
 
+        {/* Taste panel */}
+        <TastePanel />
+
+        {/* Filter chips */}
         <div className="flex gap-2">
           {filterBtns.map(btn => (
             <button
               key={btn.value}
               onClick={() => setFilter(btn.value)}
-              className={`px-4 py-2 rounded-full text-sm font-semibold touch-manipulation transition-colors ${
-                filter === btn.value ? 'bg-[#FF6B35] text-white' : 'bg-gray-100 text-gray-600'
-              }`}
+              className="px-4 py-2 rounded-full text-sm font-semibold touch-manipulation transition-colors"
+              style={{
+                background: filter === btn.value ? 'var(--brand)' : 'var(--surface)',
+                color: filter === btn.value ? 'white' : 'var(--text-2)',
+                border: `1px solid ${filter === btn.value ? 'var(--brand)' : 'var(--border)'}`,
+              }}
             >
               {btn.label}
             </button>
@@ -125,27 +136,31 @@ export default function RecipePage() {
         </div>
 
         {fridgeItems.length > 0 && (
-          <p className="text-xs font-bold text-gray-400 uppercase tracking-wider">
+          <p className="text-xs font-bold uppercase tracking-wider" style={{ color: 'var(--text-3)' }}>
             보유 재료 많은 순
           </p>
         )}
 
-        {sorted.map(recipe => (
-          <RecipeCard
-            key={recipe.id}
-            recipe={recipe}
-            fridgeItems={fridgeItems}
-            onStart={handleStart}
-          />
-        ))}
+        {/* Recipe grid: 1 col mobile, 2 col md+ */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          {sorted.map(recipe => (
+            <RecipeCard
+              key={recipe.id}
+              recipe={recipe}
+              fridgeItems={fridgeItems}
+              onStart={handleStart}
+            />
+          ))}
+        </div>
 
         {sorted.length === 0 && (
-          <div className="text-center py-12 text-gray-400">
+          <div className="text-center py-12" style={{ color: 'var(--text-3)' }}>
             <p className="text-4xl mb-2">📭</p>
             <p className="text-sm">검색 결과가 없어요</p>
             <button
               onClick={() => { setQuery(''); setFilter('all'); }}
-              className="mt-3 text-xs text-[#FF6B35] font-semibold"
+              className="mt-3 text-xs font-semibold"
+              style={{ color: 'var(--brand)' }}
             >
               필터 초기화
             </button>

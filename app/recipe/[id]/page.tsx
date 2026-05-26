@@ -2,9 +2,11 @@ import type { Metadata } from 'next';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { ArrowLeft, Clock, Users, Zap, PlayCircle, ExternalLink } from 'lucide-react';
+import { neon } from '@neondatabase/serverless';
 import { mockRecipes } from '@/data/mockRecipes';
 import { StartCookingButton } from './StartCookingButton';
 import { ServingsScaler } from '@/components/recipe/ServingsScaler';
+import type { Recipe } from '@/types';
 
 type Params = { id: string };
 
@@ -18,9 +20,48 @@ function getTotalMinutes(recipe: (typeof mockRecipes)[0]) {
   return Math.round(Math.max(b1, b2 || 0) / 60);
 }
 
+async function getRecipe(id: string): Promise<Recipe | null> {
+  const mock = mockRecipes.find(r => r.id === id);
+  if (mock) return mock as Recipe;
+  if (!process.env.DATABASE_URL) return null;
+  try {
+    const sql = neon(process.env.DATABASE_URL);
+    const rows = await sql`
+      SELECT r.*,
+        COALESCE(
+          (SELECT json_agg(jsonb_build_object(
+            'ingredient_id', ri.ingredient_id, 'name', ri.name,
+            'base_amount', ri.base_amount, 'unit', ri.unit, 'type', ri.type
+          ) ORDER BY ri.sort_order) FROM recipe_ingredients ri WHERE ri.recipe_id = r.id), '[]'
+        ) AS ingredients,
+        COALESCE(
+          (SELECT json_agg(jsonb_build_object(
+            'burner', rs.burner, 'action', rs.action,
+            'duration_sec', rs.duration_sec, 'description', rs.description
+          ) ORDER BY rs.sort_order) FROM recipe_steps rs WHERE rs.recipe_id = r.id), '[]'
+        ) AS steps
+      FROM recipes r WHERE r.id = ${id} AND r.status = 'published' LIMIT 1
+    `;
+    if (!rows[0]) return null;
+    const row = rows[0] as Record<string, unknown>;
+    return {
+      id: row.id as string,
+      title: row.title as string,
+      story: (row.story ?? '') as string,
+      thumbnail: (row.thumbnail ?? '🍳') as string,
+      isCombo: (row.is_combo ?? false) as boolean,
+      servings: (row.servings ?? 2) as number,
+      youtube_id: row.youtube_id as string | undefined,
+      youtube_credit: (row.youtube_credit ?? '') as string,
+      ingredients: (row.ingredients ?? []) as Recipe['ingredients'],
+      steps: (row.steps ?? []) as Recipe['steps'],
+    };
+  } catch { return null; }
+}
+
 export async function generateMetadata({ params }: { params: Promise<Params> }): Promise<Metadata> {
   const { id } = await params;
-  const recipe = mockRecipes.find(r => r.id === id);
+  const recipe = await getRecipe(id);
   if (!recipe) return { title: '레시피를 찾을 수 없어요' };
   const minutes = getTotalMinutes(recipe);
   const mainIngredients = recipe.ingredients.filter(i => i.type === 'main').map(i => i.name).join(', ');
@@ -34,7 +75,7 @@ export async function generateMetadata({ params }: { params: Promise<Params> }):
 
 export default async function RecipeDetailPage({ params }: { params: Promise<Params> }) {
   const { id } = await params;
-  const recipe = mockRecipes.find(r => r.id === id);
+  const recipe = await getRecipe(id);
   if (!recipe) notFound();
 
   const b1Steps = recipe.steps.filter(s => s.burner === 1);

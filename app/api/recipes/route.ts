@@ -59,29 +59,28 @@ export async function GET(req: NextRequest) {
     const recipes = await sql`
       SELECT r.*,
         COALESCE(
-          json_agg(DISTINCT jsonb_build_object(
+          (SELECT json_agg(jsonb_build_object(
             'ingredient_id', ri.ingredient_id,
             'name', ri.name,
             'base_amount', ri.base_amount,
             'unit', ri.unit,
             'type', ri.type
-          ) ORDER BY jsonb_build_object('sort_order', ri.sort_order)) FILTER (WHERE ri.id IS NOT NULL),
+          ) ORDER BY ri.sort_order)
+          FROM recipe_ingredients ri WHERE ri.recipe_id = r.id),
           '[]'
         ) AS ingredients,
         COALESCE(
-          json_agg(DISTINCT jsonb_build_object(
+          (SELECT json_agg(jsonb_build_object(
             'burner', rs.burner,
             'action', rs.action,
             'duration_sec', rs.duration_sec,
             'description', rs.description
-          ) ORDER BY jsonb_build_object('sort_order', rs.sort_order)) FILTER (WHERE rs.id IS NOT NULL),
+          ) ORDER BY rs.sort_order)
+          FROM recipe_steps rs WHERE rs.recipe_id = r.id),
           '[]'
         ) AS steps
       FROM recipes r
-      LEFT JOIN recipe_ingredients ri ON ri.recipe_id = r.id
-      LEFT JOIN recipe_steps rs ON rs.recipe_id = r.id
       WHERE r.status = ANY(${statusFilter})
-      GROUP BY r.id
       ORDER BY r.created_at DESC
     `;
 

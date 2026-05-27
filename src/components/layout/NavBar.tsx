@@ -11,6 +11,7 @@ const NAV = [
 
 export function NavBar() {
   const pathname = usePathname();
+  if (pathname === '/cook') return null;
 
   return (
     <>

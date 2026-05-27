@@ -45,8 +45,14 @@ function reducer(state: AppState, action: AppAction): AppState {
       return { ...state, fridgeItems: mockFridgeItems };
 
     case 'DEDUCT_INGREDIENTS': {
+      const norm = (s: string) => s.replace(/\s+/g, '').toLowerCase();
       const updated = state.fridgeItems.map(item => {
-        const deduction = action.payload.find(d => d.ingredient_id === item.ingredient_id);
+        const deduction = action.payload.find(d => {
+          if (d.ingredient_id === item.ingredient_id) return true;
+          const dn = norm(d.name), fn = norm(item.name);
+          if (dn.length < 2 || fn.length < 2) return false;
+          return dn === fn || dn.includes(fn) || fn.includes(dn);
+        });
         if (!deduction) return item;
         return { ...item, amount: parseFloat(Math.max(0, item.amount - deduction.adjustedAmount).toFixed(2)) };
       });

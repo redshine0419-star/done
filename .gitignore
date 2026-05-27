@@ -24,3 +24,10 @@ dist-ssr
 *.sw?
 .next/
 tsconfig.tsbuildinfo
+
+# PWA generated files (auto-created at build time)
+public/sw.js
+public/sw.js.map
+public/workbox-*.js
+public/workbox-*.js.map
+public/swe-worker-*.js

@@ -79,32 +79,36 @@ export async function POST(req: NextRequest) {
     }
 
     const videoInfo = videoTitle
-      ? `영상 제목: ${videoTitle}\n채널명: ${channelName}`
+      ? `유튜브 영상 제목: "${videoTitle}"\n채널명: ${channelName}`
       : `유튜브 영상 ID: ${videoId}`;
 
-    const prompt = `당신은 한식 레시피 전문가입니다. 아래 유튜브 영상 정보를 참고해서, 해당 요리를 독자적으로 재현한 레시피를 JSON 형식으로 작성해 주세요. 영상 내용을 직접 복사하지 말고, 일반적으로 알려진 조리법을 바탕으로 창작해 주세요.
+    const prompt = `당신은 한식 레시피 전문가입니다. 아래 유튜브 영상의 요리를 구글 검색을 활용해서 가능한 정확하게 재현한 레시피를 JSON으로 작성해 주세요.
 
 ${videoInfo}
 
+위 영상에서 다루는 요리를 분석하고, 실제 해당 요리의 정확한 재료와 조리법을 작성해 주세요.
+채널 크리에이터의 스타일과 실제 레시피에 충실하게 작성하되, 재료 양은 2인분 기준 현실적인 수치로 작성하세요.
+
 반드시 다음 JSON 형식으로만 응답하세요. 마크다운 코드블록 없이 순수 JSON만:
 {
-  "title": "요리명 (간결하게)",
+  "title": "요리명 (간결하게, 영상 제목 기반)",
   "story": "이 요리의 매력과 특징을 2-3문장으로 설명",
   "servings": 2,
   "thumbnail": "대표 이모지 1개",
   "ingredients": [
-    {"name": "재료명", "base_amount": 숫자, "unit": "단위", "type": "main|seasoning|garnish"}
+    {"name": "재료명", "base_amount": 숫자, "unit": "단위(g/ml/개/큰술/작은술 등)", "type": "main|seasoning|garnish"}
   ],
   "steps": [
-    {"burner": 1, "action": "단계명 (3-5자)", "duration_sec": 초, "description": "상세 설명"}
+    {"burner": 1, "action": "단계명 (3-5자)", "duration_sec": 초, "description": "구체적인 조리 방법 설명"}
   ]
 }
 
 주의사항:
-- ingredients의 type은 main(주재료), seasoning(양념), garnish(고명) 중 하나
-- steps의 burner는 항상 1 (단품 레시피)
-- duration_sec은 해당 단계의 예상 시간(초)
-- 재료는 5-10개, 단계는 4-7개로 구성`;
+- title은 영상 제목에서 추출한 실제 요리명으로 작성
+- ingredients의 type: main(주재료), seasoning(양념/소스), garnish(고명/마무리)
+- 재료는 6-12개, 단계는 5-8개로 실제 레시피에 맞게 구성
+- base_amount는 2인분 기준 실제 사용하는 양 (예: 돼지고기 200, 간장 2, 소금 0.5)
+- duration_sec은 실제 조리에 필요한 시간 (볶기 5분=300, 끓이기 20분=1200)`;
 
     const geminiRes = await fetch(
       `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`,
@@ -113,7 +117,8 @@ ${videoInfo}
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           contents: [{ parts: [{ text: prompt }] }],
-          generationConfig: { temperature: 0.7, maxOutputTokens: 8192 },
+          tools: [{ google_search: {} }],
+          generationConfig: { temperature: 0.3, maxOutputTokens: 8192 },
         }),
       }
     );
@@ -146,8 +151,12 @@ ${videoInfo}
       );
     }
 
-    // Strip markdown code fences if present, then find outermost JSON object
-    const stripped = content.replace(/^```(?:json)?\s*/i, '').replace(/\s*```\s*$/i, '').trim();
+    // Strip markdown fences and search-grounding citations, then extract JSON
+    const stripped = content
+      .replace(/^```(?:json)?\s*/i, '')
+      .replace(/\s*```\s*$/i, '')
+      .replace(/\[\d+\]/g, '')   // remove [1], [2] citation markers
+      .trim();
     const jsonMatch = stripped.match(/\{[\s\S]*\}/);
     if (!jsonMatch) {
       return NextResponse.json(

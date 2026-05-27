@@ -163,6 +163,7 @@ export function CookScreen() {
 
       {showComplete && (
         <CompletionModal
+          recipeName={recipe.title}
           adjustedIngredients={buildAdjustedIngredients()}
           onConfirm={handleConfirmDeduction}
           onClose={() => setShowComplete(false)}

@@ -9,6 +9,7 @@ import { TastePanel } from '@/components/recipe/TastePanel';
 import { useApp } from '@/context/AppContext';
 import { useRecipes } from '@/hooks/useRecipes';
 import { getMatchRate } from '@/utils/ingredientMatch';
+import { getDaysUntilExpiry } from '@/utils/expiry';
 import type { Recipe } from '@/types';
 
 type Filter = 'all' | 'single' | 'combo';
@@ -32,6 +33,20 @@ export default function RecipePage() {
   }, [allRecipes, fridgeItems, filter, query]);
 
   const canMakeNow = allRecipes.filter(r => getMatchRate(r, fridgeItems) >= 80).length;
+
+  const expiringItems = fridgeItems.filter(i => {
+    const d = getDaysUntilExpiry(i.expire_date);
+    return d !== null && d <= 3;
+  });
+  const expiringRecipes = expiringItems.length > 0
+    ? allRecipes.filter(r => r.ingredients.some(ing =>
+        expiringItems.some(f => {
+          const fn = f.name.replace(/\s+/g, '').toLowerCase();
+          const rn = ing.name.replace(/\s+/g, '').toLowerCase();
+          return fn === rn || fn.includes(rn) || rn.includes(fn);
+        })
+      )).slice(0, 3)
+    : [];
 
   function handleStart(recipe: Recipe) {
     dispatch({ type: 'START_COOKING', payload: recipe });
@@ -78,19 +93,74 @@ export default function RecipePage() {
           </div>
         )}
 
-        {fridgeItems.length === 0 && (
-          <div className="rounded-2xl bg-orange-50 border border-orange-100 p-4 flex gap-3 items-start">
-            <span className="text-2xl shrink-0">💡</span>
-            <div>
-              <p className="text-sm font-bold text-orange-800">냉장고 재료를 먼저 등록해 보세요</p>
-              <p className="text-xs text-orange-600 mt-1">재료를 등록하면 지금 당장 만들 수 있는 레시피를 % 기준으로 추천해 드립니다.</p>
-              <button
-                onClick={() => router.push('/fridge')}
-                className="mt-2 text-xs font-bold text-orange-700 underline touch-manipulation"
-              >
-                냉장고 탭으로 이동 →
-              </button>
+        {/* Expiry alert banner */}
+        {expiringRecipes.length > 0 && (
+          <div className="rounded-2xl p-4 space-y-2"
+               style={{ background: '#FFF7ED', border: '1px solid #FED7AA' }}>
+            <div className="flex items-center gap-2">
+              <span className="text-lg">⏰</span>
+              <p className="text-[13px] font-bold" style={{ color: '#C2410C' }}>
+                {expiringItems[0].name} 등 {expiringItems.length}가지 재료 유통기한이 임박했어요
+              </p>
             </div>
+            <p className="text-[12px]" style={{ color: '#EA580C' }}>이 재료로 만들 수 있는 레시피</p>
+            <div className="flex gap-2 flex-wrap">
+              {expiringRecipes.map(r => (
+                <Link key={r.id} href={`/recipe/${r.id}`}
+                      className="px-3 py-1.5 rounded-xl text-[12px] font-bold touch-manipulation"
+                      style={{ background: '#FFEDD5', color: '#C2410C', border: '1px solid #FED7AA' }}>
+                  {r.thumbnail} {r.title}
+                </Link>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Hero — 2구 병렬 조리 USP (항상 표시) */}
+        <div className="rounded-3xl overflow-hidden"
+             style={{ background: 'linear-gradient(135deg, #3B1F8C 0%, #6B3FD4 100%)' }}>
+          <div className="px-5 py-5">
+            <div className="flex items-start justify-between gap-3">
+              <div className="flex-1">
+                <span className="inline-block text-[11px] font-bold px-2 py-0.5 rounded-full mb-2"
+                      style={{ background: 'rgba(255,255,255,0.2)', color: 'white' }}>
+                  플레이버 싱크만의 기능
+                </span>
+                <p className="text-[18px] font-black text-white leading-tight">
+                  두 화구를 동시에 써서<br />조리 시간 최대 47% 단축
+                </p>
+                <p className="text-[12px] mt-1.5" style={{ color: 'rgba(255,255,255,0.7)' }}>
+                  메인 요리 + 국물을 함께 완성하는 2구 병렬 조리
+                </p>
+              </div>
+              <span className="text-4xl shrink-0">⚡</span>
+            </div>
+            <button
+              onClick={() => setFilter('combo')}
+              className="mt-3 px-4 py-2 rounded-xl text-[13px] font-bold touch-manipulation"
+              style={{ background: 'rgba(255,255,255,0.15)', color: 'white', border: '1px solid rgba(255,255,255,0.3)' }}
+            >
+              2구 코스 레시피 보기 →
+            </button>
+          </div>
+        </div>
+
+        {fridgeItems.length === 0 && (
+          <div className="rounded-2xl p-4 flex gap-3 items-center"
+               style={{ background: 'var(--brand-light)', border: '1px solid rgba(201,75,42,0.2)' }}>
+            <span className="text-2xl shrink-0">🧊</span>
+            <div className="flex-1">
+              <p className="text-[13px] font-bold" style={{ color: 'var(--brand)' }}>
+                냉장고 재료를 등록하면 지금 만들 수 있는 레시피를 알려드려요
+              </p>
+            </div>
+            <button
+              onClick={() => router.push('/fridge')}
+              className="shrink-0 px-3 py-1.5 rounded-xl text-[12px] font-bold touch-manipulation"
+              style={{ background: 'var(--brand)', color: 'white' }}
+            >
+              등록하기
+            </button>
           </div>
         )}
 

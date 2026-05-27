@@ -1,6 +1,7 @@
 'use client';
 import type { Recipe, FridgeItem, TasteProfile } from '@/types';
 import { adjustedAmount, dominantTasteLevel } from '@/utils/tasteMatrix';
+import { ingredientMatches } from '@/utils/ingredientMatch';
 
 interface Props {
   recipe: Recipe;
@@ -13,7 +14,7 @@ export function InventoryChecklist({ recipe, fridgeItems, tasteProfile }: Props)
     <div className="bg-gray-50 rounded-2xl p-4 space-y-2">
       <p className="text-sm font-bold text-gray-700 mb-3">재료 보유 현황</p>
       {recipe.ingredients.map(ing => {
-        const fridge = fridgeItems.find(f => f.ingredient_id === ing.ingredient_id);
+        const fridge = fridgeItems.find(f => ingredientMatches(f, ing));
         const level = dominantTasteLevel(ing.name, tasteProfile);
         const needed = adjustedAmount(ing.base_amount, ing.type, level, recipe.servings);
         const have = fridge?.amount ?? 0;

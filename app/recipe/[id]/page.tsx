@@ -137,10 +137,7 @@ export default async function RecipeDetailPage({ params }: { params: Promise<Par
         )}
       </header>
 
-      <article className="px-5 py-5 pb-12 md:grid md:grid-cols-[1fr_1.2fr] md:gap-8 md:items-start">
-
-        {/* ── Left column ── */}
-        <div className="space-y-6">
+      <article className="px-5 py-5 pb-12 space-y-6">
 
         {/* Hero card */}
         <div className="rounded-3xl overflow-hidden"
@@ -213,11 +210,6 @@ export default async function RecipeDetailPage({ params }: { params: Promise<Par
             </div>
           </section>
         )}
-
-        </div>{/* end left column */}
-
-        {/* ── Right column ── */}
-        <div className="space-y-6 mt-6 md:mt-0">
 
         {/* Story */}
         <p className="text-[14px] leading-[1.8]" style={{ color: 'var(--text-2)' }}>{recipe.story}</p>
@@ -307,7 +299,6 @@ export default async function RecipeDetailPage({ params }: { params: Promise<Par
           <StartCookingButton recipeId={recipe.id} isCombo={recipe.isCombo} />
         </div>
 
-        </div>{/* end right column */}
       </article>
     </div>
   );

@@ -1,5 +1,6 @@
 import { NavBar } from '@/components/layout/NavBar';
 import { CookFAB } from '@/components/layout/CookFAB';
+import { AddToHomeBanner } from '@/components/layout/AddToHomeBanner';
 
 export default function MainLayout({ children }: { children: React.ReactNode }) {
   return (
@@ -9,6 +10,7 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
         {children}
       </div>
       <CookFAB />
+      <AddToHomeBanner />
     </div>
   );
 }

@@ -13,17 +13,15 @@ export async function GET() {
   });
 }
 
-function isValidCookingVideo(title: string, channel: string): boolean {
-  if (!title) return false;
+function isSpamOembed(title: string, channel: string): boolean {
   const text = `${title} ${channel}`;
-  // Reject phone numbers, "ad upload", "advertisement"
   const spamPatterns = [
     /\d{3}[-.\s]?\d{3,4}[-.\s]?\d{4}/,
     /\bad[\s_-]*(upload|channel)\b/i,
     /advertisement/i,
     /sponsored\s+by/i,
   ];
-  return !spamPatterns.some(p => p.test(text));
+  return spamPatterns.some(p => p.test(text));
 }
 
 function extractVideoId(url: string): string | null {
@@ -57,15 +55,24 @@ export async function POST(req: NextRequest) {
     }
 
     // oEmbed: video title & channel (optional — continue without it)
+    // Try both watch URL and Shorts URL — Shorts sometimes only work with the Shorts format
     let videoTitle = '';
     let channelName = '';
+    let oembedSucceeded = false;
     try {
-      const oembedUrl = `https://www.youtube.com/oembed?url=${encodeURIComponent(`https://www.youtube.com/watch?v=${videoId}`)}&format=json`;
-      const oembedRes = await fetch(oembedUrl);
-      if (oembedRes.ok) {
-        const oembedData = await oembedRes.json() as { title?: string; author_name?: string };
-        videoTitle = oembedData.title ?? '';
-        channelName = oembedData.author_name ?? '';
+      const oembedCandidates = [
+        `https://www.youtube.com/watch?v=${videoId}`,
+        `https://www.youtube.com/shorts/${videoId}`,
+      ];
+      for (const candidate of oembedCandidates) {
+        const oembedRes = await fetch(`https://www.youtube.com/oembed?url=${encodeURIComponent(candidate)}&format=json`);
+        if (oembedRes.ok) {
+          const data = await oembedRes.json() as { title?: string; author_name?: string };
+          videoTitle = data.title ?? '';
+          channelName = data.author_name ?? '';
+          oembedSucceeded = true;
+          break;
+        }
       }
     } catch {
       // ignore — proceed with Gemini using video ID only
@@ -158,7 +165,10 @@ ${videoInfo}
       steps: { burner: number | null; action: string; duration_sec: number; description: string }[];
     };
 
-    const includeVideo = isValidCookingVideo(videoTitle, channelName);
+    // Only reject youtube_id when oEmbed succeeded AND returned spam content.
+    // If oEmbed failed entirely (e.g. Shorts, private video), still save the id —
+    // the user explicitly submitted a valid YouTube URL.
+    const includeVideo = !oembedSucceeded || !isSpamOembed(videoTitle, channelName);
 
     return NextResponse.json({
       recipe: {

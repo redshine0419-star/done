@@ -184,31 +184,24 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'GEMINI_API_KEY가 설정되지 않았습니다.' }, { status: 500 });
     }
 
-    // oEmbed: video title & channel (optional — continue without it)
-    let videoTitle = '';
-    let channelName = '';
-    let oembedSucceeded = false;
-    try {
-      const oembedCandidates = [
-        `https://www.youtube.com/watch?v=${videoId}`,
-        `https://www.youtube.com/shorts/${videoId}`,
-      ];
-      for (const candidate of oembedCandidates) {
-        const oembedRes = await fetch(`https://www.youtube.com/oembed?url=${encodeURIComponent(candidate)}&format=json`);
-        if (oembedRes.ok) {
-          const data = await oembedRes.json() as { title?: string; author_name?: string };
-          videoTitle = data.title ?? '';
-          channelName = data.author_name ?? '';
-          oembedSucceeded = true;
-          break;
-        }
-      }
-    } catch {
-      // ignore
-    }
+    // Run oEmbed + page scrape in parallel to minimize latency
+    const [oembedResult, videoInfo] = await Promise.all([
+      // oEmbed: try watch + shorts URLs simultaneously
+      Promise.all([
+        fetch(`https://www.youtube.com/oembed?url=${encodeURIComponent(`https://www.youtube.com/watch?v=${videoId}`)}&format=json`, { signal: AbortSignal.timeout(4000) })
+          .then(r => r.ok ? r.json() : null).catch(() => null),
+        fetch(`https://www.youtube.com/oembed?url=${encodeURIComponent(`https://www.youtube.com/shorts/${videoId}`)}&format=json`, { signal: AbortSignal.timeout(4000) })
+          .then(r => r.ok ? r.json() : null).catch(() => null),
+      ]).then(([watch, shorts]) => {
+        const data = (watch ?? shorts) as { title?: string; author_name?: string } | null;
+        return { title: data?.title ?? '', channelName: data?.author_name ?? '', succeeded: !!data };
+      }),
+      // Page scrape: description + transcript
+      fetchVideoInfo(videoId),
+    ]);
 
-    // Fetch description + transcript from YouTube page
-    const { description: videoDescription, transcript } = await fetchVideoInfo(videoId);
+    const { title: videoTitle, channelName, succeeded: oembedSucceeded } = oembedResult;
+    const { description: videoDescription, transcript } = videoInfo;
 
     const videoInfoSection = [
       videoTitle ? `영상 제목: "${videoTitle}"` : `영상 ID: ${videoId}`,
@@ -262,8 +255,11 @@ ${FEW_SHOT_EXAMPLE}
         body: JSON.stringify({
           system_instruction: { parts: [{ text: systemInstruction }] },
           contents: [{ role: 'user', parts: [{ text: userPrompt }] }],
-          tools: [{ google_search: {} }],
-          generationConfig: { temperature: 0.2, maxOutputTokens: 8192 },
+          generationConfig: {
+            temperature: 0.2,
+            maxOutputTokens: 4096,
+            thinkingConfig: { thinkingBudget: 0 },
+          },
         }),
       }
     );

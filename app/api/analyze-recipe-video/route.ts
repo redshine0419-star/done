@@ -36,40 +36,96 @@ function extractVideoId(url: string): string | null {
   return null;
 }
 
-async function fetchVideoDescription(videoId: string): Promise<string> {
+interface VideoInfo {
+  description: string;
+  transcript: string;
+}
+
+function extractDescription(html: string): string {
+  const m = html.match(/"shortDescription":"((?:[^"\\]|\\.)*)"/);
+  if (m) {
+    return m[1]
+      .replace(/\\n/g, '\n')
+      .replace(/\\"/g, '"')
+      .replace(/\\\\/g, '\\')
+      .slice(0, 2000);
+  }
+  const m2 = html.match(/"description":\s*\{"simpleText":"((?:[^"\\]|\\.)*)"\}/);
+  if (m2) {
+    return m2[1].replace(/\\n/g, '\n').replace(/\\"/g, '"').slice(0, 2000);
+  }
+  return '';
+}
+
+async function extractTranscript(html: string): Promise<string> {
+  try {
+    // Locate captionTracks array in page HTML
+    const idx = html.indexOf('"captionTracks":');
+    if (idx === -1) return '';
+    const start = html.indexOf('[', idx);
+    if (start === -1) return '';
+
+    // Walk brackets to find the closing ] of the array
+    let depth = 0, end = start;
+    for (; end < html.length; end++) {
+      if (html[end] === '[') depth++;
+      else if (html[end] === ']') { if (--depth === 0) { end++; break; } }
+    }
+
+    const tracks = JSON.parse(html.slice(start, end)) as Array<{
+      baseUrl: string;
+      languageCode: string;
+      kind?: string;
+    }>;
+    if (!tracks.length) return '';
+
+    // Prefer Korean manual captions, then Korean auto, then first available
+    const track =
+      tracks.find(t => t.languageCode === 'ko' && t.kind !== 'asr') ||
+      tracks.find(t => t.languageCode === 'ko') ||
+      tracks[0];
+
+    if (!track?.baseUrl) return '';
+
+    const captionRes = await fetch(`${track.baseUrl}&fmt=json3`, {
+      signal: AbortSignal.timeout(5000),
+    });
+    if (!captionRes.ok) return '';
+
+    const data = await captionRes.json() as {
+      events?: Array<{ segs?: Array<{ utf8: string }> }>;
+    };
+
+    return (data.events ?? [])
+      .filter(e => e.segs)
+      .map(e => e.segs!.map(s => s.utf8).join(''))
+      .join(' ')
+      .replace(/\s+/g, ' ')
+      .trim()
+      .slice(0, 4000);
+  } catch {
+    return '';
+  }
+}
+
+async function fetchVideoInfo(videoId: string): Promise<VideoInfo> {
   try {
     const res = await fetch(`https://www.youtube.com/watch?v=${videoId}`, {
       headers: {
         'Accept-Language': 'ko-KR,ko;q=0.9,en;q=0.8',
         'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/120 Safari/537.36',
       },
-      signal: AbortSignal.timeout(5000),
+      signal: AbortSignal.timeout(6000),
     });
-    if (!res.ok) return '';
+    if (!res.ok) return { description: '', transcript: '' };
     const html = await res.text();
-
-    // ytInitialData contains shortDescription in player microformat
-    const microformatMatch = html.match(/"shortDescription":"((?:[^"\\]|\\.)*)"/);
-    if (microformatMatch) {
-      return microformatMatch[1]
-        .replace(/\\n/g, '\n')
-        .replace(/\\"/g, '"')
-        .replace(/\\\\/g, '\\')
-        .slice(0, 2000);
-    }
-
-    // Fallback: ytInitialPlayerResponse description
-    const playerMatch = html.match(/"description":\s*\{"simpleText":"((?:[^"\\]|\\.)*)"\}/);
-    if (playerMatch) {
-      return playerMatch[1]
-        .replace(/\\n/g, '\n')
-        .replace(/\\"/g, '"')
-        .slice(0, 2000);
-    }
-
-    return '';
+    const [description, transcript] = await Promise.all([
+      extractDescription(html),
+      extractTranscript(html),
+    ]);
+    return { description, transcript };
   } catch {
-    return '';
+    return { description: '', transcript: '' };
   }
 }
 
@@ -151,26 +207,27 @@ export async function POST(req: NextRequest) {
       // ignore
     }
 
-    // Fetch video description from YouTube page for grounding
-    const videoDescription = await fetchVideoDescription(videoId);
+    // Fetch description + transcript from YouTube page
+    const { description: videoDescription, transcript } = await fetchVideoInfo(videoId);
 
     const videoInfoSection = [
       videoTitle ? `영상 제목: "${videoTitle}"` : `영상 ID: ${videoId}`,
       channelName ? `채널명: ${channelName}` : '',
-      videoDescription ? `\n더보기 설명:\n${videoDescription}` : '',
+      videoDescription ? `\n[더보기 설명]\n${videoDescription}` : '',
+      transcript ? `\n[영상 자막/스크립트]\n${transcript}` : '',
     ].filter(Boolean).join('\n');
 
-    const systemInstruction = `너는 유튜브 영상 스크립트와 더보기란 정보를 기반으로 정확한 레시피를 추출하는 전문 셰프이자 데이터 분석가야.
+    const systemInstruction = `너는 유튜브 영상 자막(스크립트)과 더보기란 텍스트를 기반으로 정확한 레시피를 추출하는 전문 셰프이자 데이터 분석가야.
 
 제약 조건:
-1. 제공된 텍스트(더보기 설명, 영상 제목)에 존재하지 않는 재료나 조리 단계는 절대 임의로 추가하지 마. (환각 방지)
-2. 정보가 부족해 유추해야 하는 부분이 있다면 소설을 쓰지 말고 구체적 수치 대신 "적당량" 또는 "취향에 따라"로만 표기해.
-3. 양념 비율은 반드시 영상 속 언급된 기준(밥숟가락, g, 컵, 종이컵 등)을 그대로 명시해.
-4. 불 조절(강불, 중불, 약불)과 조리 시간(분 단위) 정보가 있으면 무조건 steps의 action과 description에 포함해.
-5. 더보기 설명에 재료 목록이 명시된 경우, 그 목록을 최우선으로 사용해.
-6. 구글 검색은 크리에이터 채널 스타일 파악 및 부족한 정보 보완에만 활용해. 관계없는 다른 레시피로 대체하지 마.`;
+1. 아래 제공된 텍스트(자막, 더보기 설명)에 존재하지 않는 재료나 조리 단계는 절대 임의로 추가하지 마. (환각 방지)
+2. 정보가 부족해 유추해야 하는 부분이 있다면 구체적 수치 대신 "적당량" 또는 "취향에 따라"로만 표기해.
+3. 양념 비율은 반드시 텍스트에 언급된 기준(밥숟가락, g, 컵, 종이컵 등)을 그대로 명시해.
+4. 불 조절(강불, 중불, 약불)과 조리 시간(분 단위) 정보가 텍스트에 있으면 steps에 무조건 포함해.
+5. 더보기 설명에 재료 목록이 명시된 경우 그 목록을 최우선으로 사용하고, 자막에서 수량을 보완해.
+6. 자막도 더보기도 없는 경우에만 구글 검색으로 보완해.`;
 
-    const userPrompt = `아래 유튜브 영상의 레시피를 추출해서 정확한 JSON으로 반환해줘.
+    const userPrompt = `다음 텍스트를 기반으로만 레시피를 추출해서 정확한 JSON으로 반환해줘.
 
 ${videoInfoSection}
 

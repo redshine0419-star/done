@@ -1,10 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server';
 
-export const runtime = 'edge';
+// Video analysis needs more time than edge allows
+export const maxDuration = 60;
 
 export async function GET() {
   return NextResponse.json({
-    handler: 'analyze-recipe-video-GET-v4',
+    handler: 'analyze-recipe-video-GET-v5',
     hasGeminiKey: !!process.env.GEMINI_API_KEY,
     geminiKeyPrefix: process.env.GEMINI_API_KEY?.slice(0, 6) ?? 'NOT_SET',
     hasDatabaseUrl: !!process.env.DATABASE_URL,
@@ -197,19 +198,41 @@ ${FEW_SHOT_EXAMPLE}
 - base_amount는 영상 언급 기준 그대로 (예: 고추장 2큰술이면 2, 돼지고기 300g이면 300)
 - duration_sec은 실제 조리 시간 (볶기 5분=300, 끓이기 20분=1200)`;
 
-    const geminiRes = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`,
-      {
+    const geminiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`;
+    const baseConfig = {
+      system_instruction: { parts: [{ text: systemInstruction }] },
+      generationConfig: { temperature: 0.2, maxOutputTokens: 8192 },
+    };
+
+    // Primary: pass the actual YouTube video to Gemini for native video understanding
+    const videoUri = `https://www.youtube.com/watch?v=${videoId}`;
+    let geminiRes = await fetch(geminiUrl, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        ...baseConfig,
+        contents: [{
+          role: 'user',
+          parts: [
+            { fileData: { fileUri: videoUri } },
+            { text: userPrompt },
+          ],
+        }],
+      }),
+    });
+
+    // Fallback: text-only with Google Search if video is inaccessible
+    if (!geminiRes.ok) {
+      geminiRes = await fetch(geminiUrl, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          system_instruction: { parts: [{ text: systemInstruction }] },
+          ...baseConfig,
           contents: [{ role: 'user', parts: [{ text: userPrompt }] }],
           tools: [{ google_search: {} }],
-          generationConfig: { temperature: 0.2, maxOutputTokens: 8192 },
         }),
-      }
-    );
+      });
+    }
 
     if (!geminiRes.ok) {
       const errText = await geminiRes.text().catch(() => '');

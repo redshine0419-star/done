@@ -1,4 +1,4 @@
 User-agent: *
 Allow: /
 
-Sitemap: https://done-six-omega.vercel.app/sitemap.xml
+Sitemap: https://flavorsync.me/sitemap.xml

@@ -1,14 +1,14 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { neon } from '@neondatabase/serverless';
 
-export const maxDuration = 60;
+export const runtime = 'edge';
 
 interface Recipe {
   id: string;
   title: string;
   story: string;
-  ingredients: { name: string; amount: number; unit: string }[];
-  steps: { burner: number; label: string; durationMin: number }[];
+  ingredients: { name: string; base_amount?: number; amount?: number; unit: string }[];
+  steps: { burner: number | null; action?: string; label?: string; duration_sec?: number; durationMin?: number; description?: string }[];
   servings: number;
   isCombo: boolean;
 }
@@ -24,7 +24,7 @@ const CRON_RECIPES: Recipe[] = [
       { name: '두부', amount: 150, unit: 'g' },
       { name: '계란', amount: 3, unit: '개' },
     ],
-    steps: [{ burner: 1, label: '찌개 끓이기', durationMin: 20 }, { burner: 2, label: '계란말이', durationMin: 8 }],
+    steps: [{ burner: 1, action: '찌개 끓이기', duration_sec: 1200 }, { burner: 2, action: '계란말이', duration_sec: 480 }],
     servings: 2,
     isCombo: true,
   },
@@ -37,7 +37,7 @@ const CRON_RECIPES: Recipe[] = [
       { name: '고추장', amount: 2, unit: '큰술' },
       { name: '계란', amount: 3, unit: '개' },
     ],
-    steps: [{ burner: 1, label: '제육볶음', durationMin: 15 }, { burner: 2, label: '계란찜', durationMin: 12 }],
+    steps: [{ burner: 1, action: '제육볶음', duration_sec: 900 }, { burner: 2, action: '계란찜', duration_sec: 720 }],
     servings: 2,
     isCombo: true,
   },
@@ -52,8 +52,9 @@ function getSeason(): string {
 }
 
 function buildPrompt(recipe: Recipe): string {
-  const totalMin = recipe.steps.reduce((s, st) => Math.max(s, st.durationMin), 0);
-  const ingredientList = recipe.ingredients.map(i => `${i.name} ${i.amount}${i.unit}`).join(', ');
+  const totalSec = recipe.steps.reduce((s, st) => s + (st.duration_sec ?? (st.durationMin ?? 0) * 60), 0);
+  const totalMin = Math.round(totalSec / 60) || 20;
+  const ingredientList = recipe.ingredients.map(i => `${i.name} ${i.base_amount ?? i.amount ?? ''}${i.unit}`).join(', ');
   return `당신은 한국 푸드 매거진 수석 에디터입니다. 식품 과학, 문화적 맥락, 실용적 팁을 따뜻하고 친근한 어조로 담아냅니다.
 
 다음 레시피 정보를 바탕으로 블로그 포스트 JSON을 생성해주세요.

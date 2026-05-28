@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { neon } from '@neondatabase/serverless';
 
-export const runtime = 'edge';
+export const dynamic = 'force-dynamic';
 
 interface Recipe {
   id: string;

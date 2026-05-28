@@ -1,6 +1,7 @@
 import type { Recipe } from '@/types';
+import { extraRecipes } from './mockRecipesExtra';
 
-export const mockRecipes: Recipe[] = [
+const baseRecipes: Recipe[] = [
   {
     id: 'r1',
     title: '묵은지 김치찌개',
@@ -381,3 +382,5 @@ export const mockRecipes: Recipe[] = [
     ],
   },
 ];
+
+export const mockRecipes: Recipe[] = [...baseRecipes, ...extraRecipes];

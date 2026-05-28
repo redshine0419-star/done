@@ -9,7 +9,7 @@ interface Props {
 }
 
 function shareRecipe(recipeName: string) {
-  const text = `플레이버 싱크로 "${recipeName}" 완성! 🍳\n냉장고 재료로 오늘 저녁 해결 → https://done-six-omega.vercel.app/recipe`;
+  const text = `플레이버 싱크로 "${recipeName}" 완성! 🍳\n냉장고 재료로 오늘 저녁 해결 → https://flavorsync.me/recipe`;
   if (navigator.share) {
     navigator.share({ text }).catch(() => {});
   } else {

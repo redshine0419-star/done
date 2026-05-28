@@ -3,6 +3,7 @@ import { Providers } from './providers';
 import './globals.css';
 
 export const metadata: Metadata = {
+  metadataBase: new URL('https://flavorsync.me'),
   title: '플레이버 싱크 — 스마트 냉장고·레시피',
   description: '냉장고 식재료 기반 맞춤 레시피 추천. 영수증 OCR로 자동 등록, 2구 병렬 조리 타이머, 미각 프로파일 맞춤 간 조절.',
   manifest: '/manifest.json',

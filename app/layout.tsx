@@ -26,6 +26,9 @@ export const metadata: Metadata = {
     apple: '/favicon.svg',
   },
   robots: { index: true, follow: true },
+  other: {
+    'naver-site-verification': 'baeb20d1eeade686507962cba56aad0e40e7fccf',
+  },
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {

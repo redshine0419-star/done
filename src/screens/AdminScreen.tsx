@@ -71,7 +71,8 @@ export function AdminScreen() {
       });
       const text = await res.text();
       if (text.trimStart().startsWith('<')) {
-        setMessage(`❌ 서버 오류 (${res.status}): Vercel 환경변수(GEMINI_API_KEY, DATABASE_URL, ADMIN_SECRET) 설정을 확인해주세요.`);
+        const preview = text.replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim().slice(0, 200);
+        setMessage(`❌ 서버 오류 (${res.status}): ${preview}`);
         return;
       }
       const data = JSON.parse(text) as { post?: Record<string, unknown>; error?: string };

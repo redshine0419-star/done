@@ -161,8 +161,18 @@ export async function POST(req: NextRequest) {
 
 // Vercel Cron
 export async function GET(req: NextRequest) {
+  // 진단용: 인증 없이 라우트 상태 확인
+  const cronAuth = req.headers.get('authorization');
+  if (!cronAuth) {
+    return NextResponse.json({
+      status: 'route_ok',
+      runtime: 'nodejs',
+      hasGemini: !!process.env.GEMINI_API_KEY,
+      hasDb: !!process.env.DATABASE_URL,
+      hasAdmin: !!process.env.ADMIN_SECRET,
+    });
+  }
   try {
-    const cronAuth = req.headers.get('authorization');
     if (cronAuth !== `Bearer ${process.env.CRON_SECRET}`) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }

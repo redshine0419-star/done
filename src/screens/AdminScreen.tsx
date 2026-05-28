@@ -69,7 +69,12 @@ export function AdminScreen() {
         headers: { 'Content-Type': 'application/json', 'x-admin-secret': secret },
         body: JSON.stringify({ recipe }),
       });
-      const data = await res.json() as { post?: Record<string, unknown>; error?: string };
+      const text = await res.text();
+      if (text.trimStart().startsWith('<')) {
+        setMessage(`❌ 서버 오류 (${res.status}): Vercel 환경변수(GEMINI_API_KEY, DATABASE_URL, ADMIN_SECRET) 설정을 확인해주세요.`);
+        return;
+      }
+      const data = JSON.parse(text) as { post?: Record<string, unknown>; error?: string };
       if (data.post) {
         const post: BlogPost & { db_id: string } = {
           id: data.post.id as string,

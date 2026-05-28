@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { neon } from '@neondatabase/serverless';
 
-export const runtime = 'edge';
+export const maxDuration = 60;
 
 interface Recipe {
   id: string;
@@ -87,8 +87,13 @@ async function callGemini(prompt: string): Promise<Record<string, unknown>> {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({
+      system_instruction: { parts: [{ text: '당신은 한국 푸드 매거진 수석 에디터입니다. 요청된 JSON만 반환하고, 절대 마크다운 코드블록을 사용하지 마세요.' }] },
       contents: [{ parts: [{ text: prompt }] }],
-      generationConfig: { temperature: 0.7, maxOutputTokens: 1024 },
+      generationConfig: {
+        temperature: 0.7,
+        maxOutputTokens: 1024,
+        thinkingConfig: { thinkingBudget: 0 },
+      },
     }),
   });
 

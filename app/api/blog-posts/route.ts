@@ -1,10 +1,10 @@
 import { NextResponse } from 'next/server';
-import { neon } from '@neondatabase/serverless';
 
 export const dynamic = 'force-dynamic';
 
 export async function GET() {
   try {
+    const { neon } = await import('@neondatabase/serverless');
     const sql = neon(process.env.DATABASE_URL!);
     const rows = await sql`
       SELECT id, title, category, thumbnail, summary, body, author,

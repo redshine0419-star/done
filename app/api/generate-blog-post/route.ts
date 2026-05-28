@@ -1,5 +1,4 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { neon } from '@neondatabase/serverless';
 
 export const dynamic = 'force-dynamic';
 
@@ -134,6 +133,7 @@ export async function POST(req: NextRequest) {
 
     const prompt = buildPrompt(recipe);
     const post = await callGemini(prompt);
+    const { neon } = await import('@neondatabase/serverless');
     const sql = neon(process.env.DATABASE_URL);
     const rows = await sql`
       INSERT INTO blog_posts (title, category, thumbnail, summary, body, author, tags, read_time, related_recipe_id, status, generated_by)
@@ -179,6 +179,7 @@ export async function GET(req: NextRequest) {
     const recipe = CRON_RECIPES[Math.floor(Math.random() * CRON_RECIPES.length)];
     const prompt = buildPrompt(recipe);
     const post = await callGemini(prompt);
+    const { neon } = await import('@neondatabase/serverless');
     const sql = neon(process.env.DATABASE_URL!);
     await sql`
       INSERT INTO blog_posts (title, category, thumbnail, summary, body, author, tags, read_time, related_recipe_id, status, generated_by)

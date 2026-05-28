@@ -1,9 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { neon } from '@neondatabase/serverless';
+
 
 export const dynamic = 'force-dynamic';
 
-function db() {
+async function db() {
+  const { neon } = await import("@neondatabase/serverless");
   return neon(process.env.DATABASE_URL!);
 }
 
@@ -17,7 +18,7 @@ type Params = { id: string };
 // Public PUT: wiki-style recipe replacement (anyone can update content)
 export async function PUT(req: NextRequest, { params }: { params: Promise<Params> }) {
   try {
-    const sql = db();
+    const sql = await db();
     const { id } = await params;
     const body = await req.json() as {
       title?: string;
@@ -78,7 +79,7 @@ export async function DELETE(req: NextRequest, { params }: { params: Promise<Par
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
   try {
-    const sql = db();
+    const sql = await db();
     const { id } = await params;
     await sql`DELETE FROM recipes WHERE id = ${id}`;
     return NextResponse.json({ ok: true });
@@ -94,7 +95,7 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<Para
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
   try {
-    const sql = db();
+    const sql = await db();
     const { id } = await params;
     const { status } = await req.json() as { status: 'draft' | 'published' | 'rejected' };
     await sql`UPDATE recipes SET status = ${status}, updated_at = NOW() WHERE id = ${id}`;

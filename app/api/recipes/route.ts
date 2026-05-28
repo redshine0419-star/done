@@ -1,9 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { neon } from '@neondatabase/serverless';
 
 export const dynamic = 'force-dynamic';
 
-function db() {
+async function db() {
+  const { neon } = await import('@neondatabase/serverless');
   return neon(process.env.DATABASE_URL!);
 }
 
@@ -29,12 +29,11 @@ function mapRow(row: Record<string, unknown>) {
 
 export async function GET(req: NextRequest) {
   try {
-    const sql = db();
+    const sql = await db();
     const { searchParams } = new URL(req.url);
     const adminSecret = req.headers.get('x-admin-secret');
     const isAdmin = adminSecret && adminSecret === process.env.ADMIN_SECRET;
 
-    // Duplicate check: ?youtube_id=xxx
     const checkYoutubeId = searchParams.get('youtube_id');
     if (checkYoutubeId) {
       const rows = await sql`
@@ -44,7 +43,6 @@ export async function GET(req: NextRequest) {
       return NextResponse.json(rows[0] ?? null);
     }
 
-    // Title check: ?title=xxx
     const checkTitle = searchParams.get('title');
     if (checkTitle) {
       const rows = await sql`
@@ -93,7 +91,7 @@ export async function GET(req: NextRequest) {
 
 export async function POST(req: NextRequest) {
   try {
-    const sql = db();
+    const sql = await db();
     const body = await req.json() as {
       youtube_id?: string;
       title: string;
@@ -105,7 +103,6 @@ export async function POST(req: NextRequest) {
       steps: { burner: number | null; action: string; duration_sec: number; description: string }[];
     };
 
-    // Final duplicate guard
     if (body.youtube_id) {
       const existing = await sql`SELECT id FROM recipes WHERE youtube_id = ${body.youtube_id} LIMIT 1`;
       if (existing.length > 0) {

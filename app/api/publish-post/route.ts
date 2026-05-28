@@ -1,5 +1,4 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { neon } from '@neondatabase/serverless';
 
 export const dynamic = 'force-dynamic';
 
@@ -12,6 +11,7 @@ export async function POST(req: NextRequest) {
   if (!post_id) return NextResponse.json({ error: 'post_id required' }, { status: 400 });
 
   try {
+    const { neon } = await import('@neondatabase/serverless');
     const sql = neon(process.env.DATABASE_URL!);
     await sql`
       UPDATE blog_posts

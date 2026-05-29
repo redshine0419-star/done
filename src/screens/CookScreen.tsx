@@ -1,5 +1,5 @@
 'use client';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { ScreenWrapper } from '@/components/layout/ScreenWrapper';
 import { WakeLockToggle } from '@/components/cook/WakeLockToggle';
@@ -21,7 +21,9 @@ export function CookScreen() {
 
   useCookTimer();
 
-  if (cs?.isComplete && !showComplete) setShowComplete(true);
+  useEffect(() => {
+    if (cs?.isComplete) setShowComplete(true);
+  }, [cs?.isComplete]);
 
   if (!recipe || !cs) {
     return (
@@ -51,7 +53,8 @@ export function CookScreen() {
     );
   }
 
-  const b1Steps = recipe.steps.filter(s => s.burner === 1);
+  const isDessert = recipe.steps.every(s => s.burner === null);
+  const b1Steps = isDessert ? recipe.steps : recipe.steps.filter(s => s.burner === 1);
   const b2Steps = recipe.steps.filter(s => s.burner === 2);
   const b1Complete = cs.burner1StepIndex >= b1Steps.length;
   const b2Complete = !recipe.isCombo || cs.burner2StepIndex >= b2Steps.length;

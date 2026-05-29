@@ -28,6 +28,9 @@ async function getPost(slug: string): Promise<BlogPost | null> {
     `;
     if (!rows[0]) return null;
     const r = rows[0] as Record<string, unknown>;
+    const publishedAt = r.published_at instanceof Date
+      ? (r.published_at as Date).toISOString()
+      : String(r.published_at ?? '');
     return {
       id: r.id as string,
       title: r.title as string,
@@ -36,8 +39,8 @@ async function getPost(slug: string): Promise<BlogPost | null> {
       summary: r.summary as string,
       body: r.body as string,
       author: r.author as string,
-      published_at: r.published_at as string,
-      tags: r.tags as string[],
+      published_at: publishedAt,
+      tags: Array.isArray(r.tags) ? r.tags as string[] : [],
       readTime: r.readTime as number,
       related_recipe_id: r.related_recipe_id as string | undefined,
     };

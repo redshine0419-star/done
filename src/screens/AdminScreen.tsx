@@ -53,7 +53,38 @@ export function AdminScreen() {
     }
   }
 
+  async function loadDrafts() {
+    try {
+      const res = await fetch('/api/blog-posts?status=draft', {
+        headers: { 'x-admin-secret': secret },
+      });
+      if (!res.ok) return;
+      const rows = await res.json() as (Record<string, unknown>)[];
+      if (!Array.isArray(rows)) return;
+      const loaded: (BlogPost & { db_id: string })[] = rows.map(r => ({
+        id: r.id as string,
+        db_id: r.id as string,
+        title: r.title as string,
+        category: r.category as BlogPost['category'],
+        thumbnail: r.thumbnail as string,
+        summary: r.summary as string,
+        body: r.body as string,
+        author: r.author as string,
+        published_at: r.published_at as string,
+        tags: r.tags as string[],
+        readTime: r.readTime as number,
+        related_recipe_id: r.related_recipe_id as string | undefined,
+      }));
+      setDrafts(loaded);
+    } catch {
+      // ignore
+    }
+  }
+
   useEffect(() => {
+    if (authed && tab === 'blog') {
+      loadDrafts();
+    }
     if (authed && tab === 'recipes') {
       loadDbRecipes();
     }

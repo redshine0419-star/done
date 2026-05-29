@@ -228,6 +228,17 @@ const CRON_RECIPES: Recipe[] = [
   },
 ];
 
+const BLOG_CATEGORIES = ['요리팁', '식재료이야기', '건강식', '시즌레시피', '미각탐구'] as const;
+type BlogCategory = typeof BLOG_CATEGORIES[number];
+
+const CATEGORY_GUIDES: Record<BlogCategory, string> = {
+  '요리팁':    '이 레시피에서 활용할 수 있는 실용적인 조리 기술, 시간 절약 노하우, 실패하지 않는 팁을 중심으로 작성하세요.',
+  '식재료이야기': '이 레시피의 핵심 재료(원산지, 영양 성분, 고르는 법, 보관법, 제철 정보)를 심층적으로 다루세요.',
+  '건강식':    '이 레시피의 영양 균형, 건강 효능, 칼로리, 다이어트·면역·장 건강 측면을 과학적으로 설명하세요.',
+  '시즌레시피': `지금 계절(${getSeason()})에 이 레시피가 특히 맛있는 이유, 제철 재료 활용법, 계절 변형 아이디어를 담으세요.`,
+  '미각탐구':  '이 레시피의 맛 구조(짠맛·단맛·감칠맛·신맛·쓴맛의 조화), 향미 과학, 풍미를 극대화하는 비법을 탐구하세요.',
+};
+
 function getSeason(): string {
   const month = new Date().getMonth() + 1;
   if (month >= 3 && month <= 5) return '봄';
@@ -236,13 +247,19 @@ function getSeason(): string {
   return '겨울';
 }
 
-function buildPrompt(recipe: Recipe): string {
+function getTodayCategory(): BlogCategory {
+  const dayOfYear = Math.floor((Date.now() - new Date(new Date().getFullYear(), 0, 0).getTime()) / 86400000);
+  return BLOG_CATEGORIES[dayOfYear % BLOG_CATEGORIES.length];
+}
+
+function buildPrompt(recipe: Recipe, category?: BlogCategory): string {
+  const resolvedCategory = category ?? getTodayCategory();
   const totalSec = recipe.steps.reduce((s, st) => s + (st.duration_sec ?? (st.durationMin ?? 0) * 60), 0);
   const totalMin = Math.round(totalSec / 60) || 20;
   const ingredientList = recipe.ingredients.map(i => `${i.name} ${i.base_amount ?? i.amount ?? ''}${i.unit}`).join(', ');
   return `당신은 한국 푸드 매거진 수석 에디터입니다. 식품 과학, 문화적 맥락, 실용적 팁을 따뜻하고 친근한 어조로 담아냅니다.
 
-다음 레시피 정보를 바탕으로 블로그 포스트 JSON을 생성해주세요.
+다음 레시피 정보를 바탕으로 카테고리 "${resolvedCategory}" 블로그 포스트 JSON을 생성해주세요.
 
 레시피 정보:
 - 이름: ${recipe.title}
@@ -252,10 +269,12 @@ function buildPrompt(recipe: Recipe): string {
 - 계절: ${getSeason()}
 - 인원: ${recipe.servings}인분
 
+카테고리 작성 방향: ${CATEGORY_GUIDES[resolvedCategory]}
+
 JSON 형식으로 아래 필드를 반환하세요 (마크다운 코드블록 없이 순수 JSON만):
 {
   "title": "블로그 포스트 제목 (20자 이내, 호기심을 자극하는 제목)",
-  "category": "요리팁 | 식재료이야기 | 건강식 | 시즌레시피 | 미각탐구 중 하나",
+  "category": "${resolvedCategory}",
   "thumbnail": "레시피를 표현하는 이모지 1개",
   "summary": "포스트 요약 (80자 이내, 독자를 끌어들이는 한 줄)",
   "body": "마크다운 본문 (400~600자, ## 헤딩 2개 이상 포함, 식품 과학 또는 문화적 배경 포함)",

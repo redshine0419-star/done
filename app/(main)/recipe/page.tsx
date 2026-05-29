@@ -183,12 +183,12 @@ export default function RecipePage() {
         </div>
 
         {/* Filter chips */}
-        <div className="flex gap-2">
+        <div className="flex gap-2 overflow-x-auto pb-1" style={{ scrollbarWidth: 'none' }}>
           {filterBtns.map(btn => (
             <button
               key={btn.value}
               onClick={() => setFilter(btn.value)}
-              className="px-4 py-2 rounded-full text-sm font-semibold touch-manipulation transition-colors"
+              className="flex-shrink-0 px-4 py-2 rounded-full text-sm font-semibold touch-manipulation transition-colors"
               style={{
                 background: filter === btn.value ? 'var(--brand)' : 'var(--surface)',
                 color: filter === btn.value ? 'white' : 'var(--text-2)',

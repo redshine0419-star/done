@@ -11,7 +11,7 @@ import { getMatchRate } from '@/utils/ingredientMatch';
 import { getDaysUntilExpiry } from '@/utils/expiry';
 import type { Recipe } from '@/types';
 
-type Filter = 'all' | 'single' | 'combo' | 'dessert';
+type Filter = 'all' | 'single' | 'combo' | 'baking';
 
 export default function RecipePage() {
   const { state, dispatch } = useApp();
@@ -26,9 +26,9 @@ export default function RecipePage() {
     const list = allRecipes
       .filter(r => {
         if (filter === 'all') return true;
-        if (filter === 'dessert') return r.category === '디저트';
-        if (filter === 'combo') return r.isCombo && r.category !== '디저트';
-        if (filter === 'single') return !r.isCombo && r.category !== '디저트';
+        if (filter === 'baking') return r.category === '베이킹';
+        if (filter === 'combo') return r.isCombo && r.category !== '베이킹';
+        if (filter === 'single') return !r.isCombo && r.category !== '베이킹';
         return true;
       })
       .filter(r => r.title.includes(query) || r.story.includes(query));
@@ -62,7 +62,7 @@ export default function RecipePage() {
     { value: 'all',     label: '전체' },
     { value: 'single',  label: '1구 단품' },
     { value: 'combo',   label: '2구 코스 ⚡' },
-    { value: 'dessert', label: '🍨 디저트' },
+    { value: 'baking',  label: '🧁 베이킹' },
   ];
 
   const subtitle = fridgeItems.length > 0

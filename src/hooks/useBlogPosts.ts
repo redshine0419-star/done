@@ -22,7 +22,8 @@ export function useBlogPosts(category: BlogCategory | null, query: string) {
         p.title.includes(query) ||
         p.summary.includes(query) ||
         p.tags.some(t => t.includes(query))
-      ),
+      )
+      .sort((a, b) => new Date(b.published_at).getTime() - new Date(a.published_at).getTime()),
     [allPosts, category, query]
   );
 

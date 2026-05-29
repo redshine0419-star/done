@@ -2,7 +2,6 @@ import type { Metadata } from 'next';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { ArrowLeft, Clock, Users, Zap, PlayCircle, ExternalLink } from 'lucide-react';
-import { neon } from '@neondatabase/serverless';
 import { mockRecipes } from '@/data/mockRecipes';
 import { StartCookingButton } from './StartCookingButton';
 import { ServingsScaler } from '@/components/recipe/ServingsScaler';
@@ -25,6 +24,7 @@ async function getRecipe(id: string): Promise<Recipe | null> {
   if (mock) return mock as Recipe;
   if (!process.env.DATABASE_URL) return null;
   try {
+    const { neon } = await import('@neondatabase/serverless');
     const sql = neon(process.env.DATABASE_URL);
     const rows = await sql`
       SELECT r.*,

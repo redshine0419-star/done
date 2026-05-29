@@ -13,7 +13,6 @@ const withPWA = withPWAInit({
 });
 
 const nextConfig: NextConfig = {
-  serverExternalPackages: ['@neondatabase/serverless'],
 };
 
 export default withPWA(nextConfig);

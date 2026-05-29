@@ -53,12 +53,16 @@ export function AdminScreen() {
     }
   }
 
-  async function loadDrafts() {
+  async function loadDrafts(currentSecret?: string) {
+    const s = currentSecret ?? secret;
     try {
       const res = await fetch('/api/blog-posts?status=draft', {
-        headers: { 'x-admin-secret': secret },
+        headers: { 'x-admin-secret': s },
       });
-      if (!res.ok) return;
+      if (!res.ok) {
+        setMessage(`❌ draft 로드 실패 (${res.status})`);
+        return;
+      }
       const rows = await res.json() as (Record<string, unknown>)[];
       if (!Array.isArray(rows)) return;
       const loaded: (BlogPost & { db_id: string })[] = rows.map(r => ({
@@ -76,15 +80,12 @@ export function AdminScreen() {
         related_recipe_id: r.related_recipe_id as string | undefined,
       }));
       setDrafts(loaded);
-    } catch {
-      // ignore
+    } catch (err) {
+      setMessage(`❌ draft 로드 오류: ${err instanceof Error ? err.message : String(err)}`);
     }
   }
 
   useEffect(() => {
-    if (authed && tab === 'blog') {
-      loadDrafts();
-    }
     if (authed && tab === 'recipes') {
       loadDbRecipes();
     }
@@ -228,6 +229,40 @@ export function AdminScreen() {
     }
   }
 
+  async function handleAuth() {
+    if (!secret) return;
+    try {
+      const res = await fetch('/api/blog-posts?status=draft', {
+        headers: { 'x-admin-secret': secret },
+      });
+      if (res.status === 401) {
+        setMessage('❌ 비밀번호가 틀렸습니다');
+        return;
+      }
+      const rows = await res.json() as (Record<string, unknown>)[];
+      if (Array.isArray(rows)) {
+        const loaded: (BlogPost & { db_id: string })[] = rows.map(r => ({
+          id: r.id as string,
+          db_id: r.id as string,
+          title: r.title as string,
+          category: r.category as BlogPost['category'],
+          thumbnail: r.thumbnail as string,
+          summary: r.summary as string,
+          body: r.body as string,
+          author: r.author as string,
+          published_at: r.published_at as string,
+          tags: r.tags as string[],
+          readTime: r.readTime as number,
+          related_recipe_id: r.related_recipe_id as string | undefined,
+        }));
+        setDrafts(loaded);
+      }
+      setAuthed(true);
+    } catch {
+      setMessage('❌ 서버 연결 실패');
+    }
+  }
+
   if (!authed) {
     return (
       <div className="min-h-screen bg-gray-900 text-white flex items-center justify-center p-6">
@@ -236,16 +271,17 @@ export function AdminScreen() {
             <span className="text-5xl">🔧</span>
             <h1 className="text-xl font-black mt-3">관리자 로그인</h1>
           </div>
+          {message && <p className="text-center text-sm text-red-400">{message}</p>}
           <input
             type="password"
             placeholder="ADMIN_SECRET 입력"
             value={secret}
             onChange={e => setSecret(e.target.value)}
-            onKeyDown={e => e.key === 'Enter' && secret && setAuthed(true)}
+            onKeyDown={e => e.key === 'Enter' && handleAuth()}
             className="w-full h-12 bg-gray-800 rounded-xl px-4 text-white placeholder-gray-500 border border-gray-700 focus:outline-none focus:border-orange-400"
           />
           <button
-            onClick={() => secret && setAuthed(true)}
+            onClick={handleAuth}
             className="w-full h-12 rounded-xl bg-[#FF6B35] text-white font-bold"
           >
             입력

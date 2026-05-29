@@ -4,6 +4,7 @@ import { notFound } from 'next/navigation';
 import { ArrowLeft, Clock, Users, Zap, PlayCircle, ExternalLink } from 'lucide-react';
 import { mockRecipes } from '@/data/mockRecipes';
 import { StartCookingButton } from './StartCookingButton';
+import { RecipeEditButton } from './RecipeEditButton';
 import { ServingsScaler } from '@/components/recipe/ServingsScaler';
 import type { Recipe } from '@/types';
 
@@ -313,8 +314,18 @@ export default async function RecipeDetailPage({ params }: { params: Promise<Par
         </section>
 
         {/* CTA */}
-        <div className="pt-2">
+        <div className="pt-2 space-y-2">
           <StartCookingButton recipeId={recipe.id} isCombo={recipe.isCombo} />
+          <RecipeEditButton
+            recipeId={recipe.id}
+            initial={{
+              title: recipe.title,
+              story: recipe.story,
+              servings: recipe.servings,
+              youtube_id: recipe.youtube_id,
+              youtube_credit: recipe.youtube_credit,
+            }}
+          />
         </div>
 
       </article>

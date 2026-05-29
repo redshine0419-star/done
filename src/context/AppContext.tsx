@@ -27,6 +27,8 @@ type AppAction =
   | { type: 'RESET_COOKING' };
 
 function burnerSteps(recipe: Recipe, burner: 1 | 2) {
+  const isDessert = recipe.steps.every(s => s.burner === null);
+  if (isDessert && burner === 1) return recipe.steps;
   return recipe.steps.filter(s => s.burner === burner);
 }
 

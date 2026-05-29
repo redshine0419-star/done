@@ -2,19 +2,55 @@ import type { Metadata } from 'next';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { mockBlogPosts } from '@/data/mockBlogPosts';
+import type { BlogPost } from '@/types';
 import { StartCookingButton } from './StartCookingButton';
 
 type Params = { slug: string };
 
+export const dynamic = 'force-dynamic';
+
 export async function generateStaticParams() {
   return mockBlogPosts.map(p => ({ slug: p.id }));
+}
+
+async function getPost(slug: string): Promise<BlogPost | null> {
+  const mock = mockBlogPosts.find(p => p.id === slug);
+  if (mock) return mock;
+  try {
+    const { neon } = await import('@neondatabase/serverless');
+    const sql = neon(process.env.DATABASE_URL!);
+    const rows = await sql`
+      SELECT id, title, category, thumbnail, summary, body, author,
+             published_at, tags, read_time AS "readTime", related_recipe_id
+      FROM blog_posts
+      WHERE id = ${slug} AND status = 'published'
+      LIMIT 1
+    `;
+    if (!rows[0]) return null;
+    const r = rows[0] as Record<string, unknown>;
+    return {
+      id: r.id as string,
+      title: r.title as string,
+      category: r.category as BlogPost['category'],
+      thumbnail: r.thumbnail as string,
+      summary: r.summary as string,
+      body: r.body as string,
+      author: r.author as string,
+      published_at: r.published_at as string,
+      tags: r.tags as string[],
+      readTime: r.readTime as number,
+      related_recipe_id: r.related_recipe_id as string | undefined,
+    };
+  } catch {
+    return null;
+  }
 }
 
 export async function generateMetadata(
   { params }: { params: Promise<Params> }
 ): Promise<Metadata> {
   const { slug } = await params;
-  const post = mockBlogPosts.find(p => p.id === slug);
+  const post = await getPost(slug);
   if (!post) return { title: '포스트를 찾을 수 없어요' };
   return {
     title: `${post.title} — 플레이버 싱크`,
@@ -73,7 +109,7 @@ function InlineText({ text }: { text: string }) {
 
 export default async function BlogPostPage({ params }: { params: Promise<Params> }) {
   const { slug } = await params;
-  const post = mockBlogPosts.find(p => p.id === slug);
+  const post = await getPost(slug);
   if (!post) notFound();
 
   return (
@@ -106,7 +142,7 @@ export default async function BlogPostPage({ params }: { params: Promise<Params>
         </div>
 
         <div className="flex flex-wrap gap-1">
-          {post.tags.map(tag => (
+          {post.tags.map((tag: string) => (
             <span key={tag} className="text-xs bg-gray-100 text-gray-500 px-2 py-0.5 rounded-full">
               #{tag}
             </span>

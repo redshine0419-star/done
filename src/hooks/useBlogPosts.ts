@@ -4,14 +4,18 @@ import { fetchPublishedPosts } from '@/services/blogService';
 import { mockBlogPosts } from '@/data/mockBlogPosts';
 
 export function useBlogPosts(category: BlogCategory | null, query: string) {
-  const [allPosts, setAllPosts] = useState<BlogPost[]>([]);
+  const [allPosts, setAllPosts] = useState<BlogPost[]>(mockBlogPosts);
   const [loading, setLoading] = useState(true);
   const [error] = useState<string | null>(null);
 
   useEffect(() => {
     fetchPublishedPosts()
-      .then(posts => setAllPosts(posts.length > 0 ? posts : mockBlogPosts))
-      .catch(() => setAllPosts(mockBlogPosts))
+      .then(dbPosts => {
+        const mockIds = new Set(mockBlogPosts.map(p => p.id));
+        const dbOnly = dbPosts.filter(p => !mockIds.has(p.id));
+        setAllPosts([...dbOnly, ...mockBlogPosts]);
+      })
+      .catch(() => {})
       .finally(() => setLoading(false));
   }, []);
 

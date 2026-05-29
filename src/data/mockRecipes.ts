@@ -383,4 +383,69 @@ const baseRecipes: Recipe[] = [
   },
 ];
 
-export const mockRecipes: Recipe[] = [...baseRecipes, ...extraRecipes];
+const dessertRecipes: Recipe[] = [
+  {
+    id: 'd1',
+    title: '딸기 요거트 파르페',
+    story: '신선한 딸기와 그래놀라, 요거트를 켜켜이 쌓은 간단 디저트. 5분이면 카페 느낌 완성.',
+    thumbnail: '🍓',
+    isCombo: false,
+    category: '디저트',
+    servings: 1,
+    youtube_credit: '',
+    ingredients: [
+      { ingredient_id: 'd_yogurt',   name: '플레인 요거트', base_amount: 150, unit: 'g',  type: 'main' },
+      { ingredient_id: 'd_strawberry', name: '딸기',       base_amount: 8,   unit: '개', type: 'main' },
+      { ingredient_id: 'd_granola',  name: '그래놀라',     base_amount: 40,  unit: 'g',  type: 'main' },
+      { ingredient_id: 'd_honey',    name: '꿀',           base_amount: 10,  unit: 'ml', type: 'seasoning' },
+    ],
+    steps: [
+      { burner: null, action: '딸기 손질',         duration_sec: 60,  description: '딸기를 씻어 반으로 자릅니다.' },
+      { burner: null, action: '켜켜이 담기',        duration_sec: 90,  description: '컵에 요거트 → 그래놀라 → 딸기 순서로 쌓습니다.' },
+      { burner: null, action: '꿀 뿌려 완성',       duration_sec: 15,  description: '위에 꿀을 살짝 뿌려 마무리합니다.' },
+    ],
+  },
+  {
+    id: 'd2',
+    title: '바나나 초코 아이스크림',
+    story: '얼린 바나나만 있으면 OK. 믹서기 하나로 만드는 건강한 2재료 아이스크림.',
+    thumbnail: '🍌',
+    isCombo: false,
+    category: '디저트',
+    servings: 2,
+    youtube_credit: '',
+    ingredients: [
+      { ingredient_id: 'd_banana',   name: '바나나',     base_amount: 2,  unit: '개', type: 'main' },
+      { ingredient_id: 'd_cocoa',    name: '코코아 파우더', base_amount: 15, unit: 'g', type: 'seasoning' },
+      { ingredient_id: 'd_milk',     name: '우유',       base_amount: 30, unit: 'ml', type: 'seasoning' },
+    ],
+    steps: [
+      { burner: null, action: '바나나 냉동',         duration_sec: 14400, description: '바나나를 잘라 지퍼백에 넣고 4시간 이상 냉동합니다.' },
+      { burner: null, action: '블렌딩',              duration_sec: 60,    description: '얼린 바나나, 코코아 파우더, 우유를 믹서에 넣고 부드럽게 갑니다.' },
+      { burner: null, action: '그릇에 담아 완성',    duration_sec: 30,    description: '바로 먹거나 10분 더 냉동하면 아이스크림 식감이 됩니다.' },
+    ],
+  },
+  {
+    id: 'd3',
+    title: '두부 초코 무스',
+    story: '두부와 다크 초콜릿으로 만드는 고단백 디저트. 믿기 어렵지만 진짜 맛있어요.',
+    thumbnail: '🍫',
+    isCombo: false,
+    category: '디저트',
+    servings: 2,
+    youtube_credit: '',
+    ingredients: [
+      { ingredient_id: 'd_tofu',      name: '연두부',          base_amount: 200, unit: 'g',  type: 'main' },
+      { ingredient_id: 'd_chocolate', name: '다크 초콜릿',     base_amount: 80,  unit: 'g',  type: 'main' },
+      { ingredient_id: 'd_maple',     name: '메이플 시럽',     base_amount: 20,  unit: 'ml', type: 'seasoning' },
+      { ingredient_id: 'd_vanilla',   name: '바닐라 에센스',   base_amount: 2,   unit: 'ml', type: 'seasoning' },
+    ],
+    steps: [
+      { burner: null, action: '초콜릿 중탕 녹이기',  duration_sec: 180, description: '초콜릿을 뜨거운 물 위에 올린 그릇에서 천천히 녹입니다.' },
+      { burner: null, action: '블렌딩',              duration_sec: 60,  description: '연두부, 녹인 초콜릿, 메이플 시럽, 바닐라를 믹서에 넣고 매끄럽게 갑니다.' },
+      { burner: null, action: '냉장 굳히기',          duration_sec: 3600, description: '컵에 담아 냉장고에 1시간 이상 넣어 굳힙니다.' },
+    ],
+  },
+];
+
+export const mockRecipes: Recipe[] = [...baseRecipes, ...extraRecipes, ...dessertRecipes];

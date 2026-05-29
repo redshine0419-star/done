@@ -1,11 +1,10 @@
 'use client';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { Refrigerator, Sliders, UtensilsCrossed, BookOpen } from 'lucide-react';
+import { Refrigerator, UtensilsCrossed, BookOpen } from 'lucide-react';
 
 const NAV = [
   { path: '/fridge',  label: '냉장고', Icon: Refrigerator },
-  { path: '/taste',   label: '미각',   Icon: Sliders },
   { path: '/recipe',  label: '레시피', Icon: UtensilsCrossed },
   { path: '/blog',    label: '블로그', Icon: BookOpen },
 ] as const;

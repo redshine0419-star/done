@@ -5,14 +5,13 @@ import Link from 'next/link';
 import { Plus, Search } from 'lucide-react';
 import { ScreenWrapper } from '@/components/layout/ScreenWrapper';
 import { RecipeCard } from '@/components/recipes/RecipeCard';
-import { TastePanel } from '@/components/recipe/TastePanel';
 import { useApp } from '@/context/AppContext';
 import { useRecipes } from '@/hooks/useRecipes';
 import { getMatchRate } from '@/utils/ingredientMatch';
 import { getDaysUntilExpiry } from '@/utils/expiry';
 import type { Recipe } from '@/types';
 
-type Filter = 'all' | 'single' | 'combo';
+type Filter = 'all' | 'single' | 'combo' | 'dessert';
 
 export default function RecipePage() {
   const { state, dispatch } = useApp();
@@ -25,7 +24,13 @@ export default function RecipePage() {
 
   const sorted = useMemo(() => {
     const list = allRecipes
-      .filter(r => filter === 'all' || (filter === 'combo' ? r.isCombo : !r.isCombo))
+      .filter(r => {
+        if (filter === 'all') return true;
+        if (filter === 'dessert') return r.category === '디저트';
+        if (filter === 'combo') return r.isCombo && r.category !== '디저트';
+        if (filter === 'single') return !r.isCombo && r.category !== '디저트';
+        return true;
+      })
       .filter(r => r.title.includes(query) || r.story.includes(query));
     return fridgeItems.length > 0
       ? [...list].sort((a, b) => getMatchRate(b, fridgeItems) - getMatchRate(a, fridgeItems))
@@ -54,9 +59,10 @@ export default function RecipePage() {
   }
 
   const filterBtns: { value: Filter; label: string }[] = [
-    { value: 'all',    label: '전체' },
-    { value: 'single', label: '1구 단품' },
-    { value: 'combo',  label: '2구 코스 ⚡' },
+    { value: 'all',     label: '전체' },
+    { value: 'single',  label: '1구 단품' },
+    { value: 'combo',   label: '2구 코스 ⚡' },
+    { value: 'dessert', label: '🍨 디저트' },
   ];
 
   const subtitle = fridgeItems.length > 0
@@ -175,9 +181,6 @@ export default function RecipePage() {
             style={{ border: '1px solid var(--border)', background: 'var(--surface)', color: 'var(--text-1)' }}
           />
         </div>
-
-        {/* Taste panel */}
-        <TastePanel />
 
         {/* Filter chips */}
         <div className="flex gap-2">

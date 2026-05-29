@@ -138,10 +138,8 @@ export default async function BlogPostPage({ params }: { params: Promise<Params>
 
         <p className="text-sm text-gray-500 bg-gray-50 rounded-xl p-3 leading-relaxed">{post.summary}</p>
 
-        <div className="flex items-center gap-2 text-xs text-gray-400">
-          <span className="font-semibold text-gray-600">{post.author}</span>
-          <span>·</span>
-          <span>{post.published_at}</span>
+        <div className="text-xs text-gray-400">
+          <span>{post.published_at.slice(0, 10)}</span>
         </div>
 
         <div className="flex flex-wrap gap-1">

@@ -95,13 +95,28 @@ export default async function RecipeDetailPage({ params }: { params: Promise<Par
     ? mockRecipes.find(r => r.id === recipe.parent_combo_id)
     : null;
 
+  const pageUrl = `https://flavorsync.me/recipe/${recipe.id}`;
+  const ogImageUrl = `https://flavorsync.me/recipe/${recipe.id}/opengraph-image`;
+  const images = recipe.youtube_id
+    ? [
+        `https://img.youtube.com/vi/${recipe.youtube_id}/maxresdefault.jpg`,
+        `https://img.youtube.com/vi/${recipe.youtube_id}/hqdefault.jpg`,
+        ogImageUrl,
+      ]
+    : [ogImageUrl];
+
   const schemaOrg = {
     '@context': 'https://schema.org/',
     '@type': 'Recipe',
     name: recipe.title,
     description: recipe.story,
-    author: { '@type': 'Organization', name: '플레이버 싱크' },
+    image: images,
+    url: pageUrl,
+    author: { '@type': 'Organization', name: '플레이버 싱크', url: 'https://flavorsync.me' },
+    publisher: { '@type': 'Organization', name: '플레이버 싱크', url: 'https://flavorsync.me' },
     totalTime: `PT${parallelMin}M`,
+    prepTime: 'PT5M',
+    cookTime: `PT${Math.max(parallelMin - 5, 5)}M`,
     recipeYield: `${recipe.servings}인분`,
     recipeCategory: recipe.isCombo ? '2구 병렬 코스 요리' : '한식',
     recipeCuisine: '한국',
@@ -110,9 +125,12 @@ export default async function RecipeDetailPage({ params }: { params: Promise<Par
       '@type': 'HowToStep',
       position: i + 1,
       name: step.action,
-      text: step.description,
+      text: step.description || step.action,
+      url: `${pageUrl}#step-${i + 1}`,
+      image: images[0],
     })),
-    keywords: [recipe.title, '레시피', '만들기', '집밥', ...recipe.ingredients.map(i => i.name)].join(', '),
+    keywords: [recipe.title, '레시피', '만들기', '집밥', '한식', ...recipe.ingredients.map(i => i.name)].join(', '),
+    inLanguage: 'ko-KR',
   };
 
   return (
@@ -270,7 +288,7 @@ export default async function RecipeDetailPage({ params }: { params: Promise<Par
           )}
           <div className="space-y-4">
             {recipe.steps.map((step, i) => (
-              <div key={i} className="flex items-start gap-3">
+              <div key={i} id={`step-${i + 1}`} className="flex items-start gap-3">
                 <div className="w-7 h-7 rounded-full flex items-center justify-center text-[12px] font-bold shrink-0 mt-0.5"
                      style={{
                        background: step.burner === 1 ? 'var(--brand)' : step.burner === 2 ? '#2563EB' : 'var(--text-3)',

@@ -1,27 +1,18 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { YoutubeTranscript } from 'youtube-transcript';
 
-export const runtime = 'edge';
+// Node.js runtime — youtube-transcript requires Node APIs; Edge blocks YouTube requests
+export const runtime = 'nodejs';
+// Extend timeout: Vercel hobby allows up to 60s, pro allows 300s
+export const maxDuration = 60;
 
 export async function GET() {
   return NextResponse.json({
-    handler: 'analyze-recipe-video-GET-v6',
+    handler: 'analyze-recipe-video-GET-v7',
     hasGeminiKey: !!process.env.GEMINI_API_KEY,
-    geminiKeyPrefix: process.env.GEMINI_API_KEY?.slice(0, 6) ?? 'NOT_SET',
     hasDatabaseUrl: !!process.env.DATABASE_URL,
-    nodeVersion: process.version,
     ts: Date.now(),
   });
-}
-
-function isSpamOembed(title: string, channel: string): boolean {
-  const text = `${title} ${channel}`;
-  const spamPatterns = [
-    /\d{3}[-.\s]?\d{3,4}[-.\s]?\d{4}/,
-    /\bad[\s_-]*(upload|channel)\b/i,
-    /advertisement/i,
-    /sponsored\s+by/i,
-  ];
-  return spamPatterns.some(p => p.test(text));
 }
 
 function extractVideoId(url: string): string | null {
@@ -36,96 +27,65 @@ function extractVideoId(url: string): string | null {
   return null;
 }
 
-interface VideoInfo {
-  description: string;
-  transcript: string;
+function isSpamOembed(title: string, channel: string): boolean {
+  const text = `${title} ${channel}`;
+  return [
+    /\d{3}[-.\s]?\d{3,4}[-.\s]?\d{4}/,
+    /\bad[\s_-]*(upload|channel)\b/i,
+    /advertisement/i,
+    /sponsored\s+by/i,
+  ].some(p => p.test(text));
 }
 
-function extractDescription(html: string): string {
-  const m = html.match(/"shortDescription":"((?:[^"\\]|\\.)*)"/);
-  if (m) {
-    return m[1]
-      .replace(/\\n/g, '\n')
-      .replace(/\\"/g, '"')
-      .replace(/\\\\/g, '\\')
-      .slice(0, 2000);
-  }
-  const m2 = html.match(/"description":\s*\{"simpleText":"((?:[^"\\]|\\.)*)"\}/);
-  if (m2) {
-    return m2[1].replace(/\\n/g, '\n').replace(/\\"/g, '"').slice(0, 2000);
-  }
-  return '';
-}
-
-async function extractTranscript(html: string): Promise<string> {
+async function fetchTranscript(videoId: string): Promise<string> {
+  const timeout = new Promise<never>((_, reject) =>
+    setTimeout(() => reject(new Error('transcript timeout')), 8000)
+  );
   try {
-    // Locate captionTracks array in page HTML
-    const idx = html.indexOf('"captionTracks":');
-    if (idx === -1) return '';
-    const start = html.indexOf('[', idx);
-    if (start === -1) return '';
-
-    // Walk brackets to find the closing ] of the array
-    let depth = 0, end = start;
-    for (; end < html.length; end++) {
-      if (html[end] === '[') depth++;
-      else if (html[end] === ']') { if (--depth === 0) { end++; break; } }
+    let segments;
+    try {
+      segments = await Promise.race([
+        YoutubeTranscript.fetchTranscript(videoId, { lang: 'ko' }),
+        timeout,
+      ]);
+    } catch {
+      segments = await Promise.race([
+        YoutubeTranscript.fetchTranscript(videoId),
+        new Promise<never>((_, reject) => setTimeout(() => reject(new Error('timeout')), 5000)),
+      ]);
     }
-
-    const tracks = JSON.parse(html.slice(start, end)) as Array<{
-      baseUrl: string;
-      languageCode: string;
-      kind?: string;
-    }>;
-    if (!tracks.length) return '';
-
-    // Prefer Korean manual captions, then Korean auto, then first available
-    const track =
-      tracks.find(t => t.languageCode === 'ko' && t.kind !== 'asr') ||
-      tracks.find(t => t.languageCode === 'ko') ||
-      tracks[0];
-
-    if (!track?.baseUrl) return '';
-
-    const captionRes = await fetch(`${track.baseUrl}&fmt=json3`, {
-      signal: AbortSignal.timeout(5000),
-    });
-    if (!captionRes.ok) return '';
-
-    const data = await captionRes.json() as {
-      events?: Array<{ segs?: Array<{ utf8: string }> }>;
-    };
-
-    return (data.events ?? [])
-      .filter(e => e.segs)
-      .map(e => e.segs!.map(s => s.utf8).join(''))
+    return (segments as { text: string }[])
+      .map(s => s.text)
       .join(' ')
       .replace(/\s+/g, ' ')
       .trim()
-      .slice(0, 4000);
+      .slice(0, 8000);
   } catch {
     return '';
   }
 }
 
-async function fetchVideoInfo(videoId: string): Promise<VideoInfo> {
+async function fetchDescription(videoId: string): Promise<string> {
   try {
-    const res = await fetch(`https://www.youtube.com/watch?v=${videoId}`, {
-      headers: {
-        'Accept-Language': 'ko-KR,ko;q=0.9,en;q=0.8',
-        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/120 Safari/537.36',
-      },
-      signal: AbortSignal.timeout(6000),
-    });
-    if (!res.ok) return { description: '', transcript: '' };
+    const res = await fetch(
+      `https://www.youtube.com/watch?v=${videoId}`,
+      {
+        headers: {
+          'Accept-Language': 'ko-KR,ko;q=0.9',
+          'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/124 Safari/537.36',
+        },
+        signal: AbortSignal.timeout(6000),
+      }
+    );
+    if (!res.ok) return '';
     const html = await res.text();
-    const [description, transcript] = await Promise.all([
-      extractDescription(html),
-      extractTranscript(html),
-    ]);
-    return { description, transcript };
+    const m = html.match(/"shortDescription":"((?:[^"\\]|\\.)*)"/);
+    if (m) {
+      return m[1].replace(/\\n/g, '\n').replace(/\\"/g, '"').replace(/\\\\/g, '\\').slice(0, 3000);
+    }
+    return '';
   } catch {
-    return { description: '', transcript: '' };
+    return '';
   }
 }
 
@@ -136,14 +96,13 @@ const FEW_SHOT_EXAMPLE = `
 더보기 설명:
 제육볶음 재료 (2인분)
 돼지고기 앞다리살 300g
-양파 1/2개
-대파 1/2대
-고추장 2큰술, 고춧가루 1큰술, 간장 1큰술, 설탕 1큰술, 참기름 1큰술, 다진마늘 1큰술, 후추 약간
+양파 1/2개, 대파 1/2대
+고추장 2큰술, 고춧가루 1큰술, 간장 1큰술, 설탕 1큰술, 참기름 1큰술, 다진마늘 1큰술
 
 예시 출력:
 {
   "title": "백종원 제육볶음",
-  "story": "백종원 셰프의 제육볶음은 고추장과 고춧가루를 함께 써서 깊은 붉은 색과 매콤달콤한 맛이 특징입니다. 양파와 대파를 넉넉히 넣어 채소의 단맛이 돼지고기와 어우러집니다.",
+  "story": "백종원 셰프의 제육볶음은 고추장과 고춧가루를 함께 써서 깊은 붉은 색과 매콤달콤한 맛이 특징입니다.",
   "servings": 2,
   "thumbnail": "🥩",
   "ingredients": [
@@ -155,14 +114,13 @@ const FEW_SHOT_EXAMPLE = `
     {"name": "간장", "base_amount": 1, "unit": "큰술", "type": "seasoning"},
     {"name": "설탕", "base_amount": 1, "unit": "큰술", "type": "seasoning"},
     {"name": "참기름", "base_amount": 1, "unit": "큰술", "type": "seasoning"},
-    {"name": "다진마늘", "base_amount": 1, "unit": "큰술", "type": "seasoning"},
-    {"name": "후추", "base_amount": 0.1, "unit": "약간", "type": "seasoning"}
+    {"name": "다진마늘", "base_amount": 1, "unit": "큰술", "type": "seasoning"}
   ],
   "steps": [
-    {"burner": 1, "action": "양념장 만들기", "duration_sec": 120, "description": "볼에 고추장 2큰술, 고춧가루 1큰술, 간장 1큰술, 설탕 1큰술, 다진마늘 1큰술, 후추 약간을 섞어 양념장을 만든다."},
-    {"burner": 1, "action": "재료 밑간", "duration_sec": 600, "description": "돼지고기에 양념장을 넣고 10분간 재워 밑간한다."},
-    {"burner": 1, "action": "강불에 볶기", "duration_sec": 300, "description": "팬을 강불로 달군 뒤 밑간한 돼지고기를 넣고 5분간 볶는다."},
-    {"burner": 1, "action": "채소 추가", "duration_sec": 180, "description": "양파와 대파를 넣고 중불에서 3분간 함께 볶은 뒤 참기름 1큰술을 두르고 마무리한다."}
+    {"burner": 1, "action": "양념장 만들기", "duration_sec": 120, "description": "볼에 고추장 2큰술, 고춧가루 1큰술, 간장 1큰술, 설탕 1큰술, 다진마늘 1큰술을 섞어 양념장을 만든다."},
+    {"burner": 1, "action": "밑간 재우기", "duration_sec": 600, "description": "돼지고기에 양념장을 넣고 10분 재운다."},
+    {"burner": 1, "action": "강불 볶기", "duration_sec": 300, "description": "팬을 강불로 달궈 고기를 5분 볶는다."},
+    {"burner": 1, "action": "채소 마무리", "duration_sec": 180, "description": "양파·대파 넣고 중불 3분, 참기름 두르고 완성."}
   ]
 }`.trim();
 
@@ -184,9 +142,8 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'GEMINI_API_KEY가 설정되지 않았습니다.' }, { status: 500 });
     }
 
-    // Run oEmbed + page scrape in parallel to minimize latency
-    const [oembedResult, videoInfo] = await Promise.all([
-      // oEmbed: try watch + shorts URLs simultaneously
+    // Fetch oEmbed, transcript, and description in parallel
+    const [oembedResult, transcript, description] = await Promise.all([
       Promise.all([
         fetch(`https://www.youtube.com/oembed?url=${encodeURIComponent(`https://www.youtube.com/watch?v=${videoId}`)}&format=json`, { signal: AbortSignal.timeout(4000) })
           .then(r => r.ok ? r.json() : null).catch(() => null),
@@ -196,56 +153,57 @@ export async function POST(req: NextRequest) {
         const data = (watch ?? shorts) as { title?: string; author_name?: string } | null;
         return { title: data?.title ?? '', channelName: data?.author_name ?? '', succeeded: !!data };
       }),
-      // Page scrape: description + transcript
-      fetchVideoInfo(videoId),
+      fetchTranscript(videoId),
+      fetchDescription(videoId),
     ]);
 
     const { title: videoTitle, channelName, succeeded: oembedSucceeded } = oembedResult;
-    const { description: videoDescription, transcript } = videoInfo;
+
+    // Build context for Gemini — transcript is the primary source
+    const hasTranscript = transcript.length > 100;
+    const hasDescription = description.length > 50;
 
     const videoInfoSection = [
       videoTitle ? `영상 제목: "${videoTitle}"` : `영상 ID: ${videoId}`,
       channelName ? `채널명: ${channelName}` : '',
-      videoDescription ? `\n[더보기 설명]\n${videoDescription}` : '',
-      transcript ? `\n[영상 자막/스크립트]\n${transcript}` : '',
+      hasDescription ? `\n[더보기 설명]\n${description}` : '',
+      hasTranscript ? `\n[영상 자막 — 이 내용을 최우선으로 사용]\n${transcript}` : '',
     ].filter(Boolean).join('\n');
 
-    const systemInstruction = `너는 유튜브 영상 자막(스크립트)과 더보기란 텍스트를 기반으로 정확한 레시피를 추출하는 전문 셰프이자 데이터 분석가야.
+    const dataQuality = hasTranscript
+      ? '자막이 제공됨 — 자막 내용을 최우선으로 사용해서 정확한 재료와 단계를 추출해줘.'
+      : hasDescription
+        ? '자막 없음, 더보기 설명 기반으로 추출해줘.'
+        : '자막·설명 없음 — 제목과 채널명으로만 추론하되 불확실한 수치는 "적당량"으로 표기해.';
+
+    const systemInstruction = `너는 유튜브 영상 자막(스크립트)과 더보기란 텍스트를 기반으로 정확한 레시피를 추출하는 전문 셰프야.
 
 제약 조건:
-1. 아래 제공된 텍스트(자막, 더보기 설명)에 존재하지 않는 재료나 조리 단계는 절대 임의로 추가하지 마. (환각 방지)
-2. 정보가 부족해 유추해야 하는 부분이 있다면 구체적 수치 대신 "적당량" 또는 "취향에 따라"로만 표기해.
-3. 양념 비율은 반드시 텍스트에 언급된 기준(밥숟가락, g, 컵, 종이컵 등)을 그대로 명시해.
-4. 불 조절(강불, 중불, 약불)과 조리 시간(분 단위) 정보가 텍스트에 있으면 steps에 무조건 포함해.
-5. 더보기 설명에 재료 목록이 명시된 경우 그 목록을 최우선으로 사용하고, 자막에서 수량을 보완해.
-6. 자막도 더보기도 없는 경우에만 구글 검색으로 보완해.`;
+1. 자막에 명시된 재료·단계·수량을 그대로 추출해. 없는 내용은 추가하지 마.
+2. 수량이 불명확하면 "적당량" 표기.
+3. 자막에 불 세기(강불/중불/약불)와 시간(분)이 있으면 steps에 반드시 포함.
+4. 더보기에 재료 목록이 있으면 그 목록을 우선으로 사용하고 자막으로 수량 보완.
+5. ${dataQuality}`;
 
-    const userPrompt = `다음 텍스트를 기반으로만 레시피를 추출해서 정확한 JSON으로 반환해줘.
+    const userPrompt = `다음 정보를 기반으로 레시피를 추출해서 JSON으로 반환해줘.
 
 ${videoInfoSection}
 
 ${FEW_SHOT_EXAMPLE}
 
-위 예시처럼 아래 JSON 형식으로만 응답해. 마크다운 코드블록 없이 순수 JSON만:
+위 예시처럼 순수 JSON만 응답해 (마크다운 코드블록 없이):
 {
-  "title": "요리명 (간결하게, 영상 제목 기반)",
-  "story": "이 요리의 매력과 특징을 2-3문장으로 설명",
+  "title": "요리명",
+  "story": "이 요리의 매력 2-3문장",
   "servings": 2,
-  "thumbnail": "대표 이모지 1개",
+  "thumbnail": "이모지 1개",
   "ingredients": [
-    {"name": "재료명", "base_amount": 숫자, "unit": "단위(g/ml/개/큰술/작은술 등)", "type": "main|seasoning|garnish"}
+    {"name": "재료명", "base_amount": 숫자, "unit": "단위", "type": "main|seasoning|garnish"}
   ],
   "steps": [
-    {"burner": 1, "action": "단계명 (3-6자, 불 세기 포함 예: 강불에 볶기)", "duration_sec": 초, "description": "구체적인 조리 방법. 불 세기와 시간 명시."}
+    {"burner": 1, "action": "단계명(3-6자)", "duration_sec": 초, "description": "구체적 방법"}
   ]
-}
-
-주의:
-- title은 영상 제목에서 추출한 실제 요리명
-- ingredients type: main(주재료), seasoning(양념/소스), garnish(고명/마무리)
-- 재료는 더보기에 나온 것만 사용 (없으면 영상 제목 기반으로 최소한만)
-- base_amount는 영상 언급 기준 그대로 (예: 고추장 2큰술이면 2, 돼지고기 300g이면 300)
-- duration_sec은 실제 조리 시간 (볶기 5분=300, 끓이기 20분=1200)`;
+}`;
 
     const geminiRes = await fetch(
       `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`,
@@ -261,6 +219,7 @@ ${FEW_SHOT_EXAMPLE}
             thinkingConfig: { thinkingBudget: 0 },
           },
         }),
+        signal: AbortSignal.timeout(25000),
       }
     );
 
@@ -278,21 +237,14 @@ ${FEW_SHOT_EXAMPLE}
     };
 
     if (geminiData.error) {
-      return NextResponse.json(
-        { error: `Gemini 오류: ${geminiData.error.message}` },
-        { status: 500 }
-      );
+      return NextResponse.json({ error: `Gemini 오류: ${geminiData.error.message}` }, { status: 500 });
     }
 
     const content = geminiData.candidates?.[0]?.content?.parts?.[0]?.text ?? '';
     if (!content) {
-      return NextResponse.json(
-        { error: 'AI 응답이 비어 있습니다. 다시 시도해 주세요.' },
-        { status: 500 }
-      );
+      return NextResponse.json({ error: 'AI 응답이 비어 있습니다. 다시 시도해 주세요.' }, { status: 500 });
     }
 
-    // Strip markdown fences and search-grounding citations, then extract JSON
     const stripped = content
       .replace(/^```(?:json)?\s*/i, '')
       .replace(/\s*```\s*$/i, '')
@@ -327,6 +279,8 @@ ${FEW_SHOT_EXAMPLE}
           ingredient_id: `auto_${i}`,
         })),
       },
+      // Debug info shown in preview
+      _source: hasTranscript ? 'transcript' : hasDescription ? 'description' : 'title_only',
     });
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err);

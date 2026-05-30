@@ -9,6 +9,7 @@ interface AppState {
   tasteProfile: TasteProfile;
   activeCookRecipe: Recipe | null;
   cookSession: CookSession | null;
+  favoriteIds: string[];
 }
 
 type AppAction =
@@ -24,9 +25,12 @@ type AppAction =
   | { type: 'PAUSE_COOKING' }
   | { type: 'RESUME_COOKING' }
   | { type: 'COMPLETE_COOKING' }
-  | { type: 'RESET_COOKING' };
+  | { type: 'RESET_COOKING' }
+  | { type: 'TOGGLE_FAVORITE'; payload: string };
 
 function burnerSteps(recipe: Recipe, burner: 1 | 2) {
+  const isDessert = recipe.steps.every(s => s.burner === null);
+  if (isDessert && burner === 1) return recipe.steps;
   return recipe.steps.filter(s => s.burner === burner);
 }
 
@@ -162,6 +166,12 @@ function reducer(state: AppState, action: AppAction): AppState {
     case 'RESET_COOKING':
       return { ...state, activeCookRecipe: null, cookSession: null };
 
+    case 'TOGGLE_FAVORITE': {
+      const id = action.payload;
+      const exists = state.favoriteIds.includes(id);
+      return { ...state, favoriteIds: exists ? state.favoriteIds.filter(f => f !== id) : [...state.favoriteIds, id] };
+    }
+
     default:
       return state;
   }
@@ -180,6 +190,7 @@ function initState(): AppState {
     tasteProfile: loadFromLS<TasteProfile>('fs_taste', defaultTaste),
     activeCookRecipe: loadFromLS<Recipe | null>('fs_cook_recipe', null),
     cookSession: loadFromLS<CookSession | null>('fs_cook_session', null),
+    favoriteIds: loadFromLS<string[]>('fs_favorites', []),
   };
 }
 
@@ -197,6 +208,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
   useEffect(() => { saveToLS('fs_taste', state.tasteProfile); }, [state.tasteProfile]);
   useEffect(() => { saveToLS('fs_cook_recipe', state.activeCookRecipe); }, [state.activeCookRecipe]);
   useEffect(() => { saveToLS('fs_cook_session', state.cookSession); }, [state.cookSession]);
+  useEffect(() => { saveToLS('fs_favorites', state.favoriteIds); }, [state.favoriteIds]);
 
   return <AppContext.Provider value={{ state, dispatch }}>{children}</AppContext.Provider>;
 }

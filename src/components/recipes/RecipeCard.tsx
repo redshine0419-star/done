@@ -1,9 +1,10 @@
 'use client';
 import { useState } from 'react';
 import Link from 'next/link';
-import { ChevronDown, Clock, Users, Zap, Check, X, ExternalLink } from 'lucide-react';
+import { ChevronDown, Clock, Users, Zap, Check, X, ExternalLink, Heart } from 'lucide-react';
 import type { Recipe, FridgeItem } from '@/types';
 import { ingredientMatches } from '@/utils/ingredientMatch';
+import { useApp } from '@/context/AppContext';
 
 interface Props {
   recipe: Recipe;
@@ -49,6 +50,8 @@ function MatchRing({ rate }: { rate: number }) {
 
 export function RecipeCard({ recipe, fridgeItems, onStart }: Props) {
   const [open, setOpen] = useState(false);
+  const { state, dispatch } = useApp();
+  const isFav = state.favoriteIds.includes(recipe.id);
   const { parallel, sequential, savings } = getTimings(recipe);
   const match = getMatchInfo(recipe, fridgeItems);
 
@@ -113,6 +116,17 @@ export function RecipeCard({ recipe, fridgeItems, onStart }: Props) {
           </div>
         </div>
 
+        <button
+          onClick={e => { e.stopPropagation(); dispatch({ type: 'TOGGLE_FAVORITE', payload: recipe.id }); }}
+          className="shrink-0 p-1.5 rounded-full touch-manipulation"
+          aria-label={isFav ? '즐겨찾기 해제' : '즐겨찾기 추가'}
+        >
+          <Heart
+            size={18} strokeWidth={2}
+            color={isFav ? '#EF4444' : 'var(--text-3)'}
+            fill={isFav ? '#EF4444' : 'none'}
+          />
+        </button>
         <ChevronDown
           size={18} strokeWidth={2} color="var(--text-3)"
           className={`shrink-0 transition-transform duration-200 ${open ? 'rotate-180' : ''}`}

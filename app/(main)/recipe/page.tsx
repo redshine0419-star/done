@@ -2,7 +2,7 @@
 import { useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { Plus, Search } from 'lucide-react';
+import { Plus, Search, Heart } from 'lucide-react';
 import { ScreenWrapper } from '@/components/layout/ScreenWrapper';
 import { RecipeCard } from '@/components/recipes/RecipeCard';
 import { useApp } from '@/context/AppContext';
@@ -11,31 +11,33 @@ import { getMatchRate } from '@/utils/ingredientMatch';
 import { getDaysUntilExpiry } from '@/utils/expiry';
 import type { Recipe } from '@/types';
 
-type Filter = 'all' | 'single' | 'combo' | 'dessert';
+type Filter = 'all' | 'single' | 'combo' | 'baking';
 
 export default function RecipePage() {
   const { state, dispatch } = useApp();
   const router = useRouter();
-  const { fridgeItems } = state;
+  const { fridgeItems, favoriteIds } = state;
   const allRecipes = useRecipes();
 
   const [query, setQuery] = useState('');
   const [filter, setFilter] = useState<Filter>('all');
+  const [favOnly, setFavOnly] = useState(false);
 
   const sorted = useMemo(() => {
     const list = allRecipes
       .filter(r => {
+        if (favOnly) return favoriteIds.includes(r.id);
         if (filter === 'all') return true;
-        if (filter === 'dessert') return r.category === '디저트';
-        if (filter === 'combo') return r.isCombo && r.category !== '디저트';
-        if (filter === 'single') return !r.isCombo && r.category !== '디저트';
+        if (filter === 'baking') return r.category === '베이킹';
+        if (filter === 'combo') return r.isCombo && r.category !== '베이킹';
+        if (filter === 'single') return !r.isCombo && r.category !== '베이킹';
         return true;
       })
       .filter(r => r.title.includes(query) || r.story.includes(query));
     return fridgeItems.length > 0
       ? [...list].sort((a, b) => getMatchRate(b, fridgeItems) - getMatchRate(a, fridgeItems))
       : list;
-  }, [allRecipes, fridgeItems, filter, query]);
+  }, [allRecipes, fridgeItems, filter, query, favOnly, favoriteIds]);
 
   const canMakeNow = allRecipes.filter(r => getMatchRate(r, fridgeItems) >= 80).length;
 
@@ -62,7 +64,7 @@ export default function RecipePage() {
     { value: 'all',     label: '전체' },
     { value: 'single',  label: '1구 단품' },
     { value: 'combo',   label: '2구 코스 ⚡' },
-    { value: 'dessert', label: '🍨 디저트' },
+    { value: 'baking',  label: '🧁 베이킹' },
   ];
 
   const subtitle = fridgeItems.length > 0
@@ -170,35 +172,50 @@ export default function RecipePage() {
           </div>
         )}
 
-        {/* Search */}
-        <div className="relative">
-          <Search size={16} color="var(--text-3)" className="absolute left-4 top-1/2 -translate-y-1/2" />
-          <input
-            value={query}
-            onChange={e => setQuery(e.target.value)}
-            placeholder="레시피 검색"
-            className="w-full h-12 pl-10 pr-4 rounded-2xl text-sm"
-            style={{ border: '1px solid var(--border)', background: 'var(--surface)', color: 'var(--text-1)' }}
-          />
+        {/* Search + 즐겨찾기 토글 */}
+        <div className="flex gap-2">
+          <div className="relative flex-1">
+            <Search size={16} color="var(--text-3)" className="absolute left-4 top-1/2 -translate-y-1/2" />
+            <input
+              value={query}
+              onChange={e => setQuery(e.target.value)}
+              placeholder={favOnly ? '즐겨찾기에서 검색' : '레시피 검색'}
+              className="w-full h-12 pl-10 pr-4 rounded-2xl text-sm"
+              style={{ border: '1px solid var(--border)', background: 'var(--surface)', color: 'var(--text-1)' }}
+            />
+          </div>
+          <button
+            onClick={() => setFavOnly(v => !v)}
+            className="w-12 h-12 flex items-center justify-center rounded-2xl shrink-0 touch-manipulation"
+            style={{
+              background: favOnly ? '#FEF2F2' : 'var(--surface)',
+              border: `1px solid ${favOnly ? '#FCA5A5' : 'var(--border)'}`,
+            }}
+            aria-label="즐겨찾기만 보기"
+          >
+            <Heart size={18} strokeWidth={2} color={favOnly ? '#EF4444' : 'var(--text-3)'} fill={favOnly ? '#EF4444' : 'none'} />
+          </button>
         </div>
 
-        {/* Filter chips */}
-        <div className="flex gap-2 overflow-x-auto pb-1" style={{ scrollbarWidth: 'none' }}>
-          {filterBtns.map(btn => (
-            <button
-              key={btn.value}
-              onClick={() => setFilter(btn.value)}
-              className="flex-shrink-0 px-4 py-2 rounded-full text-sm font-semibold touch-manipulation transition-colors"
-              style={{
-                background: filter === btn.value ? 'var(--brand)' : 'var(--surface)',
-                color: filter === btn.value ? 'white' : 'var(--text-2)',
-                border: `1px solid ${filter === btn.value ? 'var(--brand)' : 'var(--border)'}`,
-              }}
-            >
-              {btn.label}
-            </button>
-          ))}
-        </div>
+        {/* Filter chips (즐겨찾기 모드일 때 숨김) */}
+        {!favOnly && (
+          <div className="flex gap-2 overflow-x-auto pb-1" style={{ scrollbarWidth: 'none' }}>
+            {filterBtns.map(btn => (
+              <button
+                key={btn.value}
+                onClick={() => setFilter(btn.value)}
+                className="flex-shrink-0 px-4 py-2 rounded-full text-sm font-semibold touch-manipulation transition-colors"
+                style={{
+                  background: filter === btn.value ? 'var(--brand)' : 'var(--surface)',
+                  color: filter === btn.value ? 'white' : 'var(--text-2)',
+                  border: `1px solid ${filter === btn.value ? 'var(--brand)' : 'var(--border)'}`,
+                }}
+              >
+                {btn.label}
+              </button>
+            ))}
+          </div>
+        )}
 
         {fridgeItems.length > 0 && (
           <p className="text-xs font-bold uppercase tracking-wider" style={{ color: 'var(--text-3)' }}>
@@ -218,12 +235,20 @@ export default function RecipePage() {
           ))}
         </div>
 
-        {sorted.length === 0 && (
+        {sorted.length === 0 && favOnly && !query && (
+          <div className="text-center py-12" style={{ color: 'var(--text-3)' }}>
+            <p className="text-4xl mb-2">🤍</p>
+            <p className="text-sm">즐겨찾기한 레시피가 없어요</p>
+            <p className="text-xs mt-1">레시피 카드의 하트를 눌러 추가하세요</p>
+          </div>
+        )}
+
+        {sorted.length === 0 && (!favOnly || query) && (
           <div className="text-center py-12" style={{ color: 'var(--text-3)' }}>
             <p className="text-4xl mb-2">📭</p>
             <p className="text-sm">검색 결과가 없어요</p>
             <button
-              onClick={() => { setQuery(''); setFilter('all'); }}
+              onClick={() => { setQuery(''); setFilter('all'); setFavOnly(false); }}
               className="mt-3 text-xs font-semibold"
               style={{ color: 'var(--brand)' }}
             >

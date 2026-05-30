@@ -12,6 +12,7 @@ interface AnalyzedRecipe {
   thumbnail: string;
   youtube_id: string;
   youtube_credit: string;
+  category?: string;
   ingredients: RecipeIngredient[];
   steps: RecipeStep[];
 }
@@ -38,6 +39,7 @@ export default function RecipeSubmitPage() {
   const [existingById, setExistingById] = useState<ExistingRecipe | null>(null);
   const [existingByTitle, setExistingByTitle] = useState<ExistingRecipe | null>(null);
   const [mode, setMode] = useState<Mode>('new');
+  const [dataSource, setDataSource] = useState<'transcript' | 'description' | 'title_only' | null>(null);
   const [updateTargetId, setUpdateTargetId] = useState<string>('');
 
   function extractVideoId(rawUrl: string): string | null {
@@ -105,13 +107,14 @@ export default function RecipeSubmitPage() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ youtube_url: rawUrl }),
       });
-      const data = await safeJson<{ recipe?: AnalyzedRecipe; error?: string }>(res);
+      const data = await safeJson<{ recipe?: AnalyzedRecipe; error?: string; _source?: 'transcript' | 'description' | 'title_only' }>(res);
       if (!data || !data.recipe) {
         const errMsg = data?.error ?? `분석 중 오류가 발생했습니다 (상태 코드: ${res.status}). 잠시 후 다시 시도해 주세요.`;
         setError(errMsg);
         return;
       }
       setRecipe(data.recipe);
+      setDataSource(data._source ?? null);
 
       // Check title duplicate (only when creating new)
       if (mode === 'new' || !updateTargetId) {
@@ -158,7 +161,7 @@ export default function RecipeSubmitPage() {
         res = await fetch('/api/recipes', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(recipe),
+          body: JSON.stringify({ ...recipe, _hp: '' }),
         });
         const data = await res.json() as { id?: string; error?: string; existing_id?: string };
         if (data.id) {
@@ -335,7 +338,24 @@ export default function RecipeSubmitPage() {
                    style={{ color: mode === 'update' ? '#D97706' : 'var(--brand)' }}>
                   {mode === 'update' ? '교체할 레시피 미리보기' : '분석 결과 미리보기'}
                 </p>
-                <p className="text-[12px] mt-0.5" style={{ color: 'var(--text-3)' }}>수정 후 등록하세요</p>
+                <div className="flex items-center gap-2 mt-1">
+                  {dataSource === 'transcript' && (
+                    <span className="text-[11px] font-bold px-2 py-0.5 rounded-full" style={{ background: '#DCFCE7', color: '#16A34A' }}>
+                      ✅ 자막 기반 — 높은 정확도
+                    </span>
+                  )}
+                  {dataSource === 'description' && (
+                    <span className="text-[11px] font-bold px-2 py-0.5 rounded-full" style={{ background: '#FEF9C3', color: '#CA8A04' }}>
+                      📄 설명란 기반 — 보통 정확도
+                    </span>
+                  )}
+                  {dataSource === 'title_only' && (
+                    <span className="text-[11px] font-bold px-2 py-0.5 rounded-full" style={{ background: '#FEE2E2', color: '#DC2626' }}>
+                      ⚠️ 제목만 — 내용 확인 필요
+                    </span>
+                  )}
+                  <span className="text-[12px]" style={{ color: 'var(--text-3)' }}>수정 후 등록하세요</span>
+                </div>
               </div>
 
               <div className="px-4 py-4 space-y-4">
@@ -375,6 +395,30 @@ export default function RecipeSubmitPage() {
                     className="w-20 h-10 px-3 rounded-xl border text-center"
                     style={{ borderColor: 'var(--border)', background: 'var(--bg)', color: 'var(--text-1)' }}
                   />
+                </div>
+
+                <div>
+                  <p className="text-[13px] font-semibold mb-2" style={{ color: 'var(--text-2)' }}>카테고리</p>
+                  <div className="flex gap-2">
+                    {[
+                      { value: '', label: '🍳 일반 레시피' },
+                      { value: '베이킹', label: '🧁 베이킹' },
+                    ].map(opt => (
+                      <button
+                        key={opt.value}
+                        type="button"
+                        onClick={() => setRecipe(r => r ? { ...r, category: opt.value || undefined } : r)}
+                        className="flex-1 h-10 rounded-xl text-[13px] font-semibold touch-manipulation"
+                        style={{
+                          background: (recipe.category ?? '') === opt.value ? 'var(--brand)' : 'var(--bg)',
+                          color: (recipe.category ?? '') === opt.value ? 'white' : 'var(--text-2)',
+                          border: `1px solid ${(recipe.category ?? '') === opt.value ? 'var(--brand)' : 'var(--border)'}`,
+                        }}
+                      >
+                        {opt.label}
+                      </button>
+                    ))}
+                  </div>
                 </div>
 
                 {/* Video preview — let user confirm or remove before saving */}

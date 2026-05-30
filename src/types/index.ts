@@ -36,7 +36,7 @@ export interface Recipe {
   thumbnail: string;
   isCombo: boolean;
   servings: number;
-  category?: '디저트';
+  category?: '베이킹';
   ingredients: RecipeIngredient[];
   steps: RecipeStep[];
   youtube_id?: string;

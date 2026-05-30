@@ -106,6 +106,8 @@ export async function POST(req: NextRequest) {
       steps: { burner: number | null; action: string; duration_sec: number; description: string }[];
     };
 
+    await sql`ALTER TABLE recipes ADD COLUMN IF NOT EXISTS category TEXT`.catch(() => {});
+
     // Honeypot — bots fill it, humans leave it blank
     if (body._hp) {
       return NextResponse.json({ id: 'ok', status: 'published' }, { status: 201 });

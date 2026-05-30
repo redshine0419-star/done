@@ -32,6 +32,8 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<Params
       steps?: { burner: number | null; action: string; duration_sec: number; description: string }[];
     };
 
+    await sql`ALTER TABLE recipes ADD COLUMN IF NOT EXISTS category TEXT`.catch(() => {});
+
     await sql`
       UPDATE recipes SET
         title          = COALESCE(${body.title ?? null}, title),

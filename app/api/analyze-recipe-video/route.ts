@@ -8,7 +8,7 @@ export const maxDuration = 60;
 
 export async function GET() {
   return NextResponse.json({
-    handler: 'analyze-recipe-video-GET-v7',
+    handler: 'analyze-recipe-video-GET-v8',
     hasGeminiKey: !!process.env.GEMINI_API_KEY,
     hasDatabaseUrl: !!process.env.DATABASE_URL,
     ts: Date.now(),
@@ -37,55 +37,132 @@ function isSpamOembed(title: string, channel: string): boolean {
   ].some(p => p.test(text));
 }
 
-async function fetchTranscript(videoId: string): Promise<string> {
-  const timeout = new Promise<never>((_, reject) =>
-    setTimeout(() => reject(new Error('transcript timeout')), 8000)
-  );
-  try {
-    let segments;
-    try {
-      segments = await Promise.race([
-        YoutubeTranscript.fetchTranscript(videoId, { lang: 'ko' }),
-        timeout,
-      ]);
-    } catch {
-      segments = await Promise.race([
-        YoutubeTranscript.fetchTranscript(videoId),
-        new Promise<never>((_, reject) => setTimeout(() => reject(new Error('timeout')), 5000)),
-      ]);
+// Bracket-counting JSON extractor — more reliable than regex on large blobs
+function extractPlayerResponse(html: string): Record<string, unknown> | null {
+  const idx = html.indexOf('ytInitialPlayerResponse');
+  if (idx === -1) return null;
+  const jsonStart = html.indexOf('{', idx);
+  if (jsonStart === -1) return null;
+
+  let depth = 0;
+  let inStr = false;
+  let esc = false;
+  // Limit scan to 1.5 MB to avoid pathological cases
+  const limit = Math.min(html.length, jsonStart + 1_500_000);
+
+  for (let i = jsonStart; i < limit; i++) {
+    const c = html[i];
+    if (esc) { esc = false; continue; }
+    if (c === '\\' && inStr) { esc = true; continue; }
+    if (c === '"') { inStr = !inStr; continue; }
+    if (inStr) continue;
+    if (c === '{') depth++;
+    else if (c === '}') {
+      depth--;
+      if (depth === 0) {
+        try { return JSON.parse(html.slice(jsonStart, i + 1)) as Record<string, unknown>; }
+        catch { return null; }
+      }
     }
-    return (segments as { text: string }[])
-      .map(s => s.text)
-      .join(' ')
-      .replace(/\s+/g, ' ')
-      .trim()
-      .slice(0, 8000);
-  } catch {
-    return '';
   }
+  return null;
 }
 
-async function fetchDescription(videoId: string): Promise<string> {
+interface YouTubeData {
+  transcript: string;
+  description: string;
+  title: string;
+  channelName: string;
+}
+
+// Single fetch: parses ytInitialPlayerResponse for description + caption track URL,
+// then fetches the caption JSON directly (no extra library needed).
+// Falls back to youtube-transcript library if the direct approach yields nothing.
+async function fetchFromYouTube(videoId: string): Promise<YouTubeData> {
+  const empty: YouTubeData = { transcript: '', description: '', title: '', channelName: '' };
   try {
-    const res = await fetch(
-      `https://www.youtube.com/watch?v=${videoId}`,
-      {
-        headers: {
-          'Accept-Language': 'ko-KR,ko;q=0.9',
-          'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/124 Safari/537.36',
-        },
-        signal: AbortSignal.timeout(6000),
-      }
-    );
-    if (!res.ok) return '';
+    const res = await fetch(`https://www.youtube.com/watch?v=${videoId}`, {
+      headers: {
+        'Accept-Language': 'ko-KR,ko;q=0.9,en;q=0.8',
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36',
+      },
+      signal: AbortSignal.timeout(12000),
+    });
+    if (!res.ok) return empty;
+
     const html = await res.text();
-    const m = html.match(/"shortDescription":"((?:[^"\\]|\\.)*)"/);
-    if (m) {
-      return m[1].replace(/\\n/g, '\n').replace(/\\"/g, '"').replace(/\\\\/g, '\\').slice(0, 3000);
+    const pr = extractPlayerResponse(html);
+    if (!pr) return empty;
+
+    const details = pr.videoDetails as Record<string, unknown> | undefined;
+    const title = String(details?.title ?? '');
+    const channelName = String(details?.author ?? '');
+    const description = String(details?.shortDescription ?? '').slice(0, 6000);
+
+    // Caption track selection: Korean manual > Korean ASR > any manual > first available
+    const captions = pr.captions as Record<string, unknown> | undefined;
+    const renderer = captions?.playerCaptionsTracklistRenderer as Record<string, unknown> | undefined;
+    const tracks = (renderer?.captionTracks ?? []) as Array<{
+      baseUrl?: string;
+      languageCode?: string;
+      kind?: string;
+    }>;
+
+    const pick =
+      tracks.find(t => t.languageCode === 'ko' && t.kind !== 'asr') ??
+      tracks.find(t => t.languageCode === 'ko') ??
+      tracks.find(t => t.kind !== 'asr') ??
+      tracks[0];
+
+    let transcript = '';
+    if (pick?.baseUrl) {
+      try {
+        const capRes = await fetch(`${pick.baseUrl}&fmt=json3`, {
+          signal: AbortSignal.timeout(6000),
+        });
+        if (capRes.ok) {
+          const capJson = await capRes.json() as {
+            events?: Array<{ segs?: Array<{ utf8?: string }> }>;
+          };
+          transcript = (capJson.events ?? [])
+            .flatMap(e => e.segs ?? [])
+            .map(s => s.utf8 ?? '')
+            .filter(t => t.trim() && t !== '\n')
+            .join(' ')
+            .replace(/\s+/g, ' ')
+            .trim()
+            .slice(0, 8000);
+        }
+      } catch { /* caption fetch failed, will fallback */ }
     }
-    return '';
+
+    // Fallback: youtube-transcript library (handles some edge cases differently)
+    if (!transcript) {
+      try {
+        let segments;
+        try {
+          segments = await Promise.race([
+            YoutubeTranscript.fetchTranscript(videoId, { lang: 'ko' }),
+            new Promise<never>((_, r) => setTimeout(() => r(new Error('timeout')), 6000)),
+          ]);
+        } catch {
+          segments = await Promise.race([
+            YoutubeTranscript.fetchTranscript(videoId),
+            new Promise<never>((_, r) => setTimeout(() => r(new Error('timeout')), 4000)),
+          ]);
+        }
+        transcript = (segments as { text: string }[])
+          .map(s => s.text)
+          .join(' ')
+          .replace(/\s+/g, ' ')
+          .trim()
+          .slice(0, 8000);
+      } catch { /* all transcript methods failed */ }
+    }
+
+    return { transcript, description, title, channelName };
   } catch {
-    return '';
+    return empty;
   }
 }
 
@@ -142,8 +219,8 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'GEMINI_API_KEY가 설정되지 않았습니다.' }, { status: 500 });
     }
 
-    // Fetch oEmbed, transcript, and description in parallel
-    const [oembedResult, transcript, description] = await Promise.all([
+    // Run oEmbed and YouTube page fetch in parallel
+    const [oembedResult, ytData] = await Promise.all([
       Promise.all([
         fetch(`https://www.youtube.com/oembed?url=${encodeURIComponent(`https://www.youtube.com/watch?v=${videoId}`)}&format=json`, { signal: AbortSignal.timeout(4000) })
           .then(r => r.ok ? r.json() : null).catch(() => null),
@@ -153,11 +230,14 @@ export async function POST(req: NextRequest) {
         const data = (watch ?? shorts) as { title?: string; author_name?: string } | null;
         return { title: data?.title ?? '', channelName: data?.author_name ?? '', succeeded: !!data };
       }),
-      fetchTranscript(videoId),
-      fetchDescription(videoId),
+      fetchFromYouTube(videoId),
     ]);
 
-    const { title: videoTitle, channelName, succeeded: oembedSucceeded } = oembedResult;
+    // oEmbed is more reliable for title/channel; ytData fills in if oEmbed failed
+    const videoTitle = oembedResult.title || ytData.title;
+    const channelName = oembedResult.channelName || ytData.channelName;
+    const oembedSucceeded = oembedResult.succeeded;
+    const { transcript, description } = ytData;
 
     // Build context for Gemini — transcript is the primary source
     const hasTranscript = transcript.length > 100;
@@ -279,7 +359,6 @@ ${FEW_SHOT_EXAMPLE}
           ingredient_id: `auto_${i}`,
         })),
       },
-      // Debug info shown in preview
       _source: hasTranscript ? 'transcript' : hasDescription ? 'description' : 'title_only',
     });
   } catch (err) {

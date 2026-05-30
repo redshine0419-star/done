@@ -53,7 +53,7 @@ export function RecipeEditButton({ recipeId, initial }: Props) {
         onClick={() => setOpen(true)}
         className="w-full h-11 rounded-2xl border border-gray-200 text-gray-500 text-sm font-semibold hover:bg-gray-50 transition-colors"
       >
-        ✏️ 레시피 수정 제안
+        ✏️ 레시피 수정하기
       </button>
 
       {open && (
@@ -63,7 +63,7 @@ export function RecipeEditButton({ recipeId, initial }: Props) {
             onClick={e => e.stopPropagation()}
           >
             <div className="flex items-center justify-between">
-              <h2 className="font-black text-lg">레시피 수정 제안</h2>
+              <h2 className="font-black text-lg">레시피 수정</h2>
               <button onClick={() => setOpen(false)} className="text-gray-400 text-xl">✕</button>
             </div>
 
@@ -99,7 +99,7 @@ export function RecipeEditButton({ recipeId, initial }: Props) {
               disabled={saving || done}
               className="w-full h-12 rounded-2xl bg-[#FF6B35] text-white font-bold disabled:opacity-60"
             >
-              {done ? '✅ 수정 완료!' : saving ? '저장 중...' : '수정 제안 보내기'}
+              {done ? '✅ 수정 완료!' : saving ? '저장 중...' : '수정 저장하기'}
             </button>
           </div>
         </div>

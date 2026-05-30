@@ -64,9 +64,10 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<Params
       await sql`DELETE FROM recipe_steps WHERE recipe_id = ${id}`;
       for (let i = 0; i < body.steps.length; i++) {
         const step = body.steps[i];
+        const burner = step.burner === 1 || step.burner === 2 ? step.burner : null;
         await sql`
           INSERT INTO recipe_steps (recipe_id, burner, action, duration_sec, description, sort_order)
-          VALUES (${id}, ${step.burner ?? null}, ${step.action}, ${step.duration_sec}, ${step.description ?? ''}, ${i})
+          VALUES (${id}, ${burner}, ${step.action}, ${step.duration_sec}, ${step.description ?? ''}, ${i})
         `;
       }
     }

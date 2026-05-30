@@ -201,7 +201,7 @@ ${FEW_SHOT_EXAMPLE}
     {"name": "재료명", "base_amount": 숫자(불명확하면 0), "unit": "단위(불명확하면 '적당량')", "type": "main|seasoning|garnish"}
   ],
   "steps": [
-    {"burner": 1, "action": "단계명(3-6자)", "duration_sec": 초, "description": "구체적 방법"}
+    {"burner": 1 또는 2 (베이킹·오븐 단계처럼 불이 없으면 반드시 null), "action": "단계명(3-6자)", "duration_sec": 초, "description": "구체적 방법"}
   ]
 }`;
 

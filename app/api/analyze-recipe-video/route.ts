@@ -3,6 +3,8 @@ import { YoutubeTranscript } from 'youtube-transcript';
 
 // Node.js runtime — youtube-transcript requires Node APIs; Edge blocks YouTube requests
 export const runtime = 'nodejs';
+// Extend timeout: Vercel hobby allows up to 60s, pro allows 300s
+export const maxDuration = 60;
 
 export async function GET() {
   return NextResponse.json({
@@ -36,20 +38,28 @@ function isSpamOembed(title: string, channel: string): boolean {
 }
 
 async function fetchTranscript(videoId: string): Promise<string> {
+  const timeout = new Promise<never>((_, reject) =>
+    setTimeout(() => reject(new Error('transcript timeout')), 8000)
+  );
   try {
-    // Try Korean first, then fall back to any available language
     let segments;
     try {
-      segments = await YoutubeTranscript.fetchTranscript(videoId, { lang: 'ko' });
+      segments = await Promise.race([
+        YoutubeTranscript.fetchTranscript(videoId, { lang: 'ko' }),
+        timeout,
+      ]);
     } catch {
-      segments = await YoutubeTranscript.fetchTranscript(videoId);
+      segments = await Promise.race([
+        YoutubeTranscript.fetchTranscript(videoId),
+        new Promise<never>((_, reject) => setTimeout(() => reject(new Error('timeout')), 5000)),
+      ]);
     }
-    return segments
+    return (segments as { text: string }[])
       .map(s => s.text)
       .join(' ')
       .replace(/\s+/g, ' ')
       .trim()
-      .slice(0, 8000); // 8000 chars — enough for a full recipe video
+      .slice(0, 8000);
   } catch {
     return '';
   }
@@ -209,7 +219,7 @@ ${FEW_SHOT_EXAMPLE}
             thinkingConfig: { thinkingBudget: 0 },
           },
         }),
-        signal: AbortSignal.timeout(30000),
+        signal: AbortSignal.timeout(25000),
       }
     );
 

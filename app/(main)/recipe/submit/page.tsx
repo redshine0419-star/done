@@ -12,6 +12,7 @@ interface AnalyzedRecipe {
   thumbnail: string;
   youtube_id: string;
   youtube_credit: string;
+  category?: string;
   ingredients: RecipeIngredient[];
   steps: RecipeStep[];
 }
@@ -375,6 +376,30 @@ export default function RecipeSubmitPage() {
                     className="w-20 h-10 px-3 rounded-xl border text-center"
                     style={{ borderColor: 'var(--border)', background: 'var(--bg)', color: 'var(--text-1)' }}
                   />
+                </div>
+
+                <div>
+                  <p className="text-[13px] font-semibold mb-2" style={{ color: 'var(--text-2)' }}>카테고리</p>
+                  <div className="flex gap-2">
+                    {[
+                      { value: '', label: '🍳 일반 레시피' },
+                      { value: '베이킹', label: '🧁 베이킹' },
+                    ].map(opt => (
+                      <button
+                        key={opt.value}
+                        type="button"
+                        onClick={() => setRecipe(r => r ? { ...r, category: opt.value || undefined } : r)}
+                        className="flex-1 h-10 rounded-xl text-[13px] font-semibold touch-manipulation"
+                        style={{
+                          background: (recipe.category ?? '') === opt.value ? 'var(--brand)' : 'var(--bg)',
+                          color: (recipe.category ?? '') === opt.value ? 'white' : 'var(--text-2)',
+                          border: `1px solid ${(recipe.category ?? '') === opt.value ? 'var(--brand)' : 'var(--border)'}`,
+                        }}
+                      >
+                        {opt.label}
+                      </button>
+                    ))}
+                  </div>
                 </div>
 
                 {/* Video preview — let user confirm or remove before saving */}

@@ -15,6 +15,7 @@ function mapRow(row: Record<string, unknown>) {
     thumbnail: row.thumbnail ?? '🍳',
     isCombo: row.is_combo ?? false,
     servings: row.servings ?? 2,
+    category: row.category ?? undefined,
     youtube_id: row.youtube_id ?? undefined,
     youtube_credit: row.youtube_credit ?? '',
     parent_combo_id: row.parent_combo_id ?? undefined,
@@ -99,6 +100,7 @@ export async function POST(req: NextRequest) {
       servings: number;
       thumbnail?: string;
       youtube_credit?: string;
+      category?: string;
       _hp?: string;
       ingredients: { ingredient_id: string; name: string; base_amount: number; unit: string; type: string }[];
       steps: { burner: number | null; action: string; duration_sec: number; description: string }[];
@@ -148,7 +150,7 @@ export async function POST(req: NextRequest) {
     const id = `db_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`;
 
     await sql`
-      INSERT INTO recipes (id, title, story, thumbnail, is_combo, servings, youtube_id, youtube_credit, status, submitted_by)
+      INSERT INTO recipes (id, title, story, thumbnail, is_combo, servings, youtube_id, youtube_credit, category, status, submitted_by)
       VALUES (
         ${id}, ${body.title}, ${body.story},
         ${body.thumbnail ?? '🍳'},
@@ -156,6 +158,7 @@ export async function POST(req: NextRequest) {
         ${body.servings ?? 2},
         ${body.youtube_id},
         ${body.youtube_credit ?? ''},
+        ${body.category ?? null},
         'published',
         ${ipHash}
       )

@@ -12,6 +12,7 @@ interface Props {
     thumbnail: string;
     youtube_id?: string;
     youtube_credit?: string;
+    category?: string;
     ingredients: RecipeIngredient[];
     steps: RecipeStep[];
   };
@@ -37,6 +38,7 @@ export function RecipeEditButton({ recipeId, initial }: Props) {
   const [servings, setServings] = useState(String(initial.servings));
   const [youtubeId, setYoutubeId] = useState(initial.youtube_id ?? '');
   const [youtubeCredit, setYoutubeCredit] = useState(initial.youtube_credit ?? '');
+  const [category, setCategory] = useState(initial.category ?? '');
   const [ingredients, setIngredients] = useState<RecipeIngredient[]>(
     initial.ingredients.map(i => ({ ...i }))
   );
@@ -51,6 +53,7 @@ export function RecipeEditButton({ recipeId, initial }: Props) {
     setServings(String(initial.servings));
     setYoutubeId(initial.youtube_id ?? '');
     setYoutubeCredit(initial.youtube_credit ?? '');
+    setCategory(initial.category ?? '');
     setIngredients(initial.ingredients.map(i => ({ ...i })));
     setSteps(initial.steps.map(s => ({ ...s })));
     setError('');
@@ -97,6 +100,7 @@ export function RecipeEditButton({ recipeId, initial }: Props) {
           servings: parseInt(servings) || 2,
           youtube_id: youtubeId.trim() || null,
           youtube_credit: youtubeCredit.trim(),
+          category: category || null,
           ingredients: ingredients.filter(i => i.name.trim()),
           steps: steps.filter(s => s.action.trim()),
         }),
@@ -195,6 +199,30 @@ export function RecipeEditButton({ recipeId, initial }: Props) {
                   className="w-20 h-10 px-3 rounded-xl border text-center font-bold"
                   style={{ borderColor: 'var(--border)', background: 'var(--surface)', color: 'var(--text-1)' }}
                 />
+              </div>
+
+              <div>
+                <span className="text-[13px] font-semibold block mb-2" style={{ color: 'var(--text-2)' }}>카테고리</span>
+                <div className="flex gap-2">
+                  {[
+                    { value: '', label: '🍳 일반 레시피' },
+                    { value: '베이킹', label: '🧁 베이킹' },
+                  ].map(opt => (
+                    <button
+                      key={opt.value}
+                      type="button"
+                      onClick={() => setCategory(opt.value)}
+                      className="flex-1 h-10 rounded-xl text-[13px] font-semibold touch-manipulation"
+                      style={{
+                        background: category === opt.value ? 'var(--brand)' : 'var(--surface)',
+                        color: category === opt.value ? 'white' : 'var(--text-2)',
+                        border: `1px solid ${category === opt.value ? 'var(--brand)' : 'var(--border)'}`,
+                      }}
+                    >
+                      {opt.label}
+                    </button>
+                  ))}
+                </div>
               </div>
             </section>
 

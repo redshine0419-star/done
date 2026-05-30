@@ -27,6 +27,7 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<Params
       youtube_id?: string;
       youtube_credit?: string;
       thumbnail?: string;
+      category?: string | null;
       ingredients?: { ingredient_id: string; name: string; base_amount: number; unit: string; type: string }[];
       steps?: { burner: number | null; action: string; duration_sec: number; description: string }[];
     };
@@ -39,6 +40,7 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<Params
         youtube_id     = ${body.youtube_id ?? null},
         youtube_credit = ${body.youtube_credit ?? ''},
         thumbnail      = COALESCE(${body.thumbnail ?? null}, thumbnail),
+        category       = ${'category' in body ? (body.category ?? null) : null},
         updated_at     = NOW()
       WHERE id = ${id}
     `;

@@ -325,6 +325,7 @@ export default async function RecipeDetailPage({ params }: { params: Promise<Par
               servings: recipe.servings,
               youtube_id: recipe.youtube_id,
               youtube_credit: recipe.youtube_credit,
+              category: recipe.category,
               ingredients: recipe.ingredients,
               steps: recipe.steps,
             }}

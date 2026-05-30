@@ -180,7 +180,7 @@ export async function POST(req: NextRequest) {
 
 제약 조건:
 1. 자막에 명시된 재료·단계·수량을 그대로 추출해. 없는 내용은 추가하지 마.
-2. 수량이 불명확하면 "적당량" 표기.
+2. 수량이 불명확하면 base_amount는 반드시 숫자 0으로 쓰고, unit 필드에 "적당량"을 표기해.
 3. 자막에 불 세기(강불/중불/약불)와 시간(분)이 있으면 steps에 반드시 포함.
 4. 더보기에 재료 목록이 있으면 그 목록을 우선으로 사용하고 자막으로 수량 보완.
 5. ${dataQuality}`;
@@ -198,7 +198,7 @@ ${FEW_SHOT_EXAMPLE}
   "servings": 2,
   "thumbnail": "이모지 1개",
   "ingredients": [
-    {"name": "재료명", "base_amount": 숫자, "unit": "단위", "type": "main|seasoning|garnish"}
+    {"name": "재료명", "base_amount": 숫자(불명확하면 0), "unit": "단위(불명확하면 '적당량')", "type": "main|seasoning|garnish"}
   ],
   "steps": [
     {"burner": 1, "action": "단계명(3-6자)", "duration_sec": 초, "description": "구체적 방법"}

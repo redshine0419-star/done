@@ -168,9 +168,10 @@ export async function POST(req: NextRequest) {
 
     for (let i = 0; i < body.ingredients.length; i++) {
       const ing = body.ingredients[i];
+      const amt = typeof ing.base_amount === 'number' ? ing.base_amount : (parseFloat(String(ing.base_amount)) || 0);
       await sql`
         INSERT INTO recipe_ingredients (recipe_id, ingredient_id, name, base_amount, unit, type, sort_order)
-        VALUES (${id}, ${ing.ingredient_id || ing.name}, ${ing.name}, ${ing.base_amount}, ${ing.unit}, ${ing.type}, ${i})
+        VALUES (${id}, ${ing.ingredient_id || ing.name}, ${ing.name}, ${amt}, ${ing.unit}, ${ing.type}, ${i})
       `;
     }
 

@@ -158,7 +158,7 @@ export default function RecipeSubmitPage() {
         res = await fetch('/api/recipes', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(recipe),
+          body: JSON.stringify({ ...recipe, _hp: '' }),
         });
         const data = await res.json() as { id?: string; error?: string; existing_id?: string };
         if (data.id) {

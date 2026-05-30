@@ -39,6 +39,7 @@ export default function RecipeSubmitPage() {
   const [existingById, setExistingById] = useState<ExistingRecipe | null>(null);
   const [existingByTitle, setExistingByTitle] = useState<ExistingRecipe | null>(null);
   const [mode, setMode] = useState<Mode>('new');
+  const [dataSource, setDataSource] = useState<'transcript' | 'description' | 'title_only' | null>(null);
   const [updateTargetId, setUpdateTargetId] = useState<string>('');
 
   function extractVideoId(rawUrl: string): string | null {
@@ -106,13 +107,14 @@ export default function RecipeSubmitPage() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ youtube_url: rawUrl }),
       });
-      const data = await safeJson<{ recipe?: AnalyzedRecipe; error?: string }>(res);
+      const data = await safeJson<{ recipe?: AnalyzedRecipe; error?: string; _source?: 'transcript' | 'description' | 'title_only' }>(res);
       if (!data || !data.recipe) {
         const errMsg = data?.error ?? `분석 중 오류가 발생했습니다 (상태 코드: ${res.status}). 잠시 후 다시 시도해 주세요.`;
         setError(errMsg);
         return;
       }
       setRecipe(data.recipe);
+      setDataSource(data._source ?? null);
 
       // Check title duplicate (only when creating new)
       if (mode === 'new' || !updateTargetId) {
@@ -336,7 +338,24 @@ export default function RecipeSubmitPage() {
                    style={{ color: mode === 'update' ? '#D97706' : 'var(--brand)' }}>
                   {mode === 'update' ? '교체할 레시피 미리보기' : '분석 결과 미리보기'}
                 </p>
-                <p className="text-[12px] mt-0.5" style={{ color: 'var(--text-3)' }}>수정 후 등록하세요</p>
+                <div className="flex items-center gap-2 mt-1">
+                  {dataSource === 'transcript' && (
+                    <span className="text-[11px] font-bold px-2 py-0.5 rounded-full" style={{ background: '#DCFCE7', color: '#16A34A' }}>
+                      ✅ 자막 기반 — 높은 정확도
+                    </span>
+                  )}
+                  {dataSource === 'description' && (
+                    <span className="text-[11px] font-bold px-2 py-0.5 rounded-full" style={{ background: '#FEF9C3', color: '#CA8A04' }}>
+                      📄 설명란 기반 — 보통 정확도
+                    </span>
+                  )}
+                  {dataSource === 'title_only' && (
+                    <span className="text-[11px] font-bold px-2 py-0.5 rounded-full" style={{ background: '#FEE2E2', color: '#DC2626' }}>
+                      ⚠️ 제목만 — 내용 확인 필요
+                    </span>
+                  )}
+                  <span className="text-[12px]" style={{ color: 'var(--text-3)' }}>수정 후 등록하세요</span>
+                </div>
               </div>
 
               <div className="px-4 py-4 space-y-4">

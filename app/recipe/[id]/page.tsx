@@ -104,8 +104,9 @@ export default async function RecipeDetailPage({ params }: { params: Promise<Par
     ? mockBase.find(r => r.id === recipe.parent_combo_id)
     : null;
 
-  const pageUrl = `https://flavorsync.me/recipe/${recipe.id}`;
-  const ogImageUrl = `https://flavorsync.me/recipe/${recipe.id}/opengraph-image`;
+  const siteUrl = isEn ? 'https://en.flavorsync.me' : 'https://flavorsync.me';
+  const pageUrl = `${siteUrl}/recipe/${recipe.id}`;
+  const ogImageUrl = `${siteUrl}/recipe/${recipe.id}/opengraph-image`;
   const images = recipe.youtube_id
     ? [
         `https://img.youtube.com/vi/${recipe.youtube_id}/maxresdefault.jpg`,
@@ -121,8 +122,8 @@ export default async function RecipeDetailPage({ params }: { params: Promise<Par
     description: recipe.story,
     image: images,
     url: pageUrl,
-    author: { '@type': 'Organization', name: isEn ? 'FlavorSync' : '플레이버 싱크', url: 'https://flavorsync.me' },
-    publisher: { '@type': 'Organization', name: isEn ? 'FlavorSync' : '플레이버 싱크', url: 'https://flavorsync.me' },
+    author: { '@type': 'Organization', name: isEn ? 'FlavorSync' : '플레이버 싱크', url: siteUrl },
+    publisher: { '@type': 'Organization', name: isEn ? 'FlavorSync' : '플레이버 싱크', url: siteUrl },
     totalTime: `PT${parallelMin}M`,
     prepTime: 'PT5M',
     cookTime: `PT${Math.max(parallelMin - 5, 5)}M`,

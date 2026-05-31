@@ -5,7 +5,7 @@ import { isEn } from '@/i18n';
 import './globals.css';
 
 export const metadata: Metadata = {
-  metadataBase: new URL('https://flavorsync.me'),
+  metadataBase: new URL(isEn ? 'https://en.flavorsync.me' : 'https://flavorsync.me'),
   title: isEn
     ? 'FlavorSync — Smart Fridge & Recipes'
     : '플레이버 싱크 — 스마트 냉장고·레시피',

@@ -31,7 +31,7 @@ const BURNER_OPTIONS = () => [
 
 export function RecipeEditButton({ recipeId, initial }: Props) {
   const { data: session } = useSession();
-  const { dispatch: appDispatch } = useApp();
+  const { toggleFavorite } = useApp();
   const router = useRouter();
   const [open, setOpen] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -131,7 +131,7 @@ export function RecipeEditButton({ recipeId, initial }: Props) {
       });
       const data = await res.json() as { id?: string; error?: string };
       if (data.id) {
-        appDispatch({ type: 'TOGGLE_FAVORITE', payload: data.id });
+        toggleFavorite(data.id);
         setDone(true);
         setNewId(data.id);
         setTimeout(() => {

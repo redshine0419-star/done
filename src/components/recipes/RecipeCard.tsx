@@ -50,7 +50,7 @@ function MatchRing({ rate }: { rate: number }) {
 
 export function RecipeCard({ recipe, fridgeItems, onStart }: Props) {
   const [open, setOpen] = useState(false);
-  const { state, dispatch } = useApp();
+  const { state, toggleFavorite } = useApp();
   const isFav = state.favoriteIds.includes(recipe.id);
   const { parallel, sequential, savings } = getTimings(recipe);
   const match = getMatchInfo(recipe, fridgeItems);
@@ -117,7 +117,7 @@ export function RecipeCard({ recipe, fridgeItems, onStart }: Props) {
         </div>
 
         <button
-          onClick={e => { e.stopPropagation(); dispatch({ type: 'TOGGLE_FAVORITE', payload: recipe.id }); }}
+          onClick={e => { e.stopPropagation(); toggleFavorite(recipe.id); }}
           className="shrink-0 p-1.5 rounded-full touch-manipulation"
           aria-label={isFav ? '즐겨찾기 해제' : '즐겨찾기 추가'}
         >

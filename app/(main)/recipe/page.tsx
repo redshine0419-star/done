@@ -2,7 +2,8 @@
 import { useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { Plus, Search, Heart } from 'lucide-react';
+import { Plus, Search, Heart, UserCircle2 } from 'lucide-react';
+import { useSession } from 'next-auth/react';
 import { ScreenWrapper } from '@/components/layout/ScreenWrapper';
 import { RecipeCard } from '@/components/recipes/RecipeCard';
 import { useApp } from '@/context/AppContext';
@@ -19,15 +20,20 @@ export default function RecipePage() {
   const router = useRouter();
   const { fridgeItems, favoriteIds } = state;
   const allRecipes = useRecipes();
+  const { data: session } = useSession();
 
   const [query, setQuery] = useState('');
   const [filter, setFilter] = useState<Filter>('all');
   const [favOnly, setFavOnly] = useState(false);
+  const [myOnly, setMyOnly] = useState(false);
+
+  const activeSpecial = session ? myOnly : favOnly;
 
   const sorted = useMemo(() => {
     const list = allRecipes
       .filter(r => {
-        if (favOnly) return favoriteIds.includes(r.id);
+        if (session && myOnly) return r.author_id === session.user?.id;
+        if (!session && favOnly) return favoriteIds.includes(r.id);
         if (filter === 'all') return true;
         if (filter === 'baking') return r.category === '베이킹';
         if (filter === 'combo') return r.isCombo && r.category !== '베이킹';
@@ -38,7 +44,7 @@ export default function RecipePage() {
     return fridgeItems.length > 0
       ? [...list].sort((a, b) => getMatchRate(b, fridgeItems) - getMatchRate(a, fridgeItems))
       : list;
-  }, [allRecipes, fridgeItems, filter, query, favOnly, favoriteIds]);
+  }, [allRecipes, fridgeItems, filter, query, favOnly, favoriteIds, myOnly, session]);
 
   const canMakeNow = allRecipes.filter(r => getMatchRate(r, fridgeItems) >= 80).length;
 
@@ -177,33 +183,47 @@ export default function RecipePage() {
           </div>
         )}
 
-        {/* Search + 즐겨찾기 토글 */}
+        {/* Search + 필터 토글 */}
         <div className="flex gap-2">
           <div className="relative flex-1">
             <Search size={16} color="var(--text-3)" className="absolute left-4 top-1/2 -translate-y-1/2" />
             <input
               value={query}
               onChange={e => setQuery(e.target.value)}
-              placeholder={favOnly ? t.recipe.favSearchPlaceholder : t.recipe.searchPlaceholder}
+              placeholder={activeSpecial ? (isEn ? 'Search my recipes…' : '내 레시피 검색…') : t.recipe.searchPlaceholder}
               className="w-full h-12 pl-10 pr-4 rounded-2xl text-sm"
               style={{ border: '1px solid var(--border)', background: 'var(--surface)', color: 'var(--text-1)' }}
             />
           </div>
-          <button
-            onClick={() => setFavOnly(v => !v)}
-            className="w-12 h-12 flex items-center justify-center rounded-2xl shrink-0 touch-manipulation"
-            style={{
-              background: favOnly ? '#FEF2F2' : 'var(--surface)',
-              border: `1px solid ${favOnly ? '#FCA5A5' : 'var(--border)'}`,
-            }}
-            aria-label={t.recipe.favToggleLabel}
-          >
-            <Heart size={18} strokeWidth={2} color={favOnly ? '#EF4444' : 'var(--text-3)'} fill={favOnly ? '#EF4444' : 'none'} />
-          </button>
+          {session ? (
+            <button
+              onClick={() => setMyOnly(v => !v)}
+              className="w-12 h-12 flex items-center justify-center rounded-2xl shrink-0 touch-manipulation"
+              style={{
+                background: myOnly ? 'var(--brand-light)' : 'var(--surface)',
+                border: `1px solid ${myOnly ? 'var(--brand)' : 'var(--border)'}`,
+              }}
+              aria-label={isEn ? 'My recipes' : '내 레시피'}
+            >
+              <UserCircle2 size={18} strokeWidth={2} color={myOnly ? 'var(--brand)' : 'var(--text-3)'} />
+            </button>
+          ) : (
+            <button
+              onClick={() => setFavOnly(v => !v)}
+              className="w-12 h-12 flex items-center justify-center rounded-2xl shrink-0 touch-manipulation"
+              style={{
+                background: favOnly ? '#FEF2F2' : 'var(--surface)',
+                border: `1px solid ${favOnly ? '#FCA5A5' : 'var(--border)'}`,
+              }}
+              aria-label={t.recipe.favToggleLabel}
+            >
+              <Heart size={18} strokeWidth={2} color={favOnly ? '#EF4444' : 'var(--text-3)'} fill={favOnly ? '#EF4444' : 'none'} />
+            </button>
+          )}
         </div>
 
-        {/* Filter chips (즐겨찾기 모드일 때 숨김) */}
-        {!favOnly && (
+        {/* Filter chips (내 레시피 / 즐겨찾기 모드일 때 숨김) */}
+        {!activeSpecial && (
           <div className="flex gap-2 overflow-x-auto pb-1" style={{ scrollbarWidth: 'none' }}>
             {filterBtns.map(btn => (
               <button
@@ -239,6 +259,14 @@ export default function RecipePage() {
             />
           ))}
         </div>
+
+        {sorted.length === 0 && myOnly && !query && (
+          <div className="text-center py-12" style={{ color: 'var(--text-3)' }}>
+            <p className="text-4xl mb-2">👤</p>
+            <p className="text-sm">{isEn ? 'No recipes yet' : '아직 내 레시피가 없어요'}</p>
+            <p className="text-xs mt-1">{isEn ? 'Try "Make It Mine" on any recipe' : '레시피에서 "나의 레시피로 만들기"를 눌러보세요'}</p>
+          </div>
+        )}
 
         {sorted.length === 0 && favOnly && !query && (
           <div className="text-center py-12" style={{ color: 'var(--text-3)' }}>

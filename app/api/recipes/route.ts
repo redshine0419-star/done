@@ -22,6 +22,8 @@ function mapRow(row: Record<string, unknown>) {
     related_single_ids: (row.related_single_ids as string[] | null) ?? undefined,
     status: row.status,
     submitted_by: row.submitted_by,
+    author_id: row.author_id ?? undefined,
+    author_name: row.author_name ?? undefined,
     created_at: row.created_at,
     ingredients: row.ingredients ?? [],
     steps: row.steps ?? [],

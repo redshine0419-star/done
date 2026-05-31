@@ -37,8 +37,7 @@ export function RecipeEditButton({ recipeId, initial }: Props) {
   const [error, setError] = useState('');
   const [newId, setNewId] = useState('');
 
-  const defaultTitle = `${initial.title} (${isEn ? 'My Version' : '내 버전'})`;
-  const [title, setTitle] = useState(defaultTitle);
+  const [title, setTitle] = useState(initial.title);
   const [thumbnail, setThumbnail] = useState(initial.thumbnail);
   const [story, setStory] = useState(initial.story);
   const [servings, setServings] = useState(String(initial.servings));
@@ -52,8 +51,8 @@ export function RecipeEditButton({ recipeId, initial }: Props) {
     initial.steps.map(s => ({ ...s }))
   );
 
-  function resetForm() {
-    setTitle(defaultTitle);
+  function resetForm(nextTitle?: string) {
+    setTitle(nextTitle ?? initial.title);
     setThumbnail(initial.thumbnail);
     setStory(initial.story);
     setServings(String(initial.servings));
@@ -67,9 +66,18 @@ export function RecipeEditButton({ recipeId, initial }: Props) {
     setNewId('');
   }
 
-  function handleOpen() {
+  async function handleOpen() {
     if (!session) { signIn('google'); return; }
-    resetForm();
+    // Find next available letter suffix: "(A)", "(B)", ...
+    let nextTitle = initial.title;
+    for (let i = 0; i < 26; i++) {
+      const letter = String.fromCharCode(65 + i);
+      const candidate = `${initial.title} (${letter})`;
+      const res = await fetch(`/api/recipes?title=${encodeURIComponent(candidate)}`).catch(() => null);
+      const data = res ? await res.json().catch(() => null) : null;
+      if (!data) { nextTitle = candidate; break; }
+    }
+    resetForm(nextTitle);
     setOpen(true);
   }
   function handleClose() { setOpen(false); }

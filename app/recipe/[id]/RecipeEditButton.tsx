@@ -1,6 +1,7 @@
 'use client';
 import { useState } from 'react';
 import { X, Plus, Trash2, ChevronDown, Loader2, Check } from 'lucide-react';
+import { t, isEn } from '@/i18n';
 import type { RecipeIngredient, RecipeStep } from '@/types';
 
 interface Props {
@@ -19,11 +20,10 @@ interface Props {
 }
 
 const ING_TYPES = ['main', 'seasoning', 'garnish'] as const;
-const ING_TYPE_LABEL: Record<string, string> = { main: '주재료', seasoning: '양념', garnish: '고명' };
-const BURNER_OPTIONS = [
-  { value: '', label: '없음 (베이킹·디저트)' },
-  { value: '1', label: '1구' },
-  { value: '2', label: '2구' },
+const BURNER_OPTIONS = () => [
+  { value: '', label: isEn ? 'None (Baking/Dessert)' : '없음 (베이킹·디저트)' },
+  { value: '1', label: t.cook.burner1 },
+  { value: '2', label: t.cook.burner2 },
 ];
 
 export function RecipeEditButton({ recipeId, initial }: Props) {
@@ -86,7 +86,7 @@ export function RecipeEditButton({ recipeId, initial }: Props) {
   }
 
   async function handleSave() {
-    if (!title.trim()) { setError('제목을 입력해주세요.'); return; }
+    if (!title.trim()) { setError(isEn ? 'Please enter a title.' : '제목을 입력해주세요.'); return; }
     setSaving(true);
     setError('');
     try {
@@ -110,7 +110,7 @@ export function RecipeEditButton({ recipeId, initial }: Props) {
         setDone(true);
         setTimeout(() => { handleClose(); }, 1500);
       } else {
-        setError(data.error ?? '저장에 실패했습니다.');
+        setError(data.error ?? (isEn ? 'Save failed.' : '저장에 실패했습니다.'));
       }
     } catch (e) {
       setError((e as Error).message);
@@ -126,7 +126,7 @@ export function RecipeEditButton({ recipeId, initial }: Props) {
         className="w-full h-11 rounded-2xl text-sm font-semibold touch-manipulation"
         style={{ border: '1px solid var(--border)', color: 'var(--text-3)', background: 'var(--surface)' }}
       >
-        ✏️ 레시피 수정하기
+        ✏️ {t.recipe.editRecipe}
       </button>
 
       {open && (
@@ -138,14 +138,18 @@ export function RecipeEditButton({ recipeId, initial }: Props) {
                     style={{ background: 'var(--bg)' }}>
               <X size={18} color="var(--text-2)" strokeWidth={2} />
             </button>
-            <span className="font-bold text-[15px]" style={{ color: 'var(--text-1)' }}>레시피 수정</span>
+            <span className="font-bold text-[15px]" style={{ color: 'var(--text-1)' }}>{t.recipe.editRecipe}</span>
             <button
               onClick={handleSave}
               disabled={saving || done}
               className="h-9 px-4 rounded-xl text-[13px] font-bold text-white touch-manipulation disabled:opacity-50 flex items-center gap-1.5"
               style={{ background: done ? 'var(--green)' : 'var(--brand)' }}
             >
-              {done ? <><Check size={14} strokeWidth={2.5} /> 완료</> : saving ? <><Loader2 size={14} className="animate-spin" /> 저장 중</> : '저장'}
+              {done
+                ? <><Check size={14} strokeWidth={2.5} /> {isEn ? 'Done' : '완료'}</>
+                : saving
+                  ? <><Loader2 size={14} className="animate-spin" /> {isEn ? 'Saving…' : '저장 중'}</>
+                  : t.common.save}
             </button>
           </div>
 
@@ -160,7 +164,7 @@ export function RecipeEditButton({ recipeId, initial }: Props) {
 
             {/* Basic info */}
             <section className="space-y-3">
-              <h3 className="text-[13px] font-bold uppercase tracking-wider" style={{ color: 'var(--text-3)' }}>기본 정보</h3>
+              <h3 className="text-[13px] font-bold uppercase tracking-wider" style={{ color: 'var(--text-3)' }}>{isEn ? 'Basic Info' : '기본 정보'}</h3>
 
               <div className="flex gap-3 items-center">
                 <input
@@ -173,7 +177,7 @@ export function RecipeEditButton({ recipeId, initial }: Props) {
                 <input
                   value={title}
                   onChange={e => setTitle(e.target.value)}
-                  placeholder="레시피 제목"
+                  placeholder={isEn ? 'Recipe title' : '레시피 제목'}
                   className="flex-1 h-14 px-4 rounded-xl border font-bold text-[15px]"
                   style={{ borderColor: 'var(--border)', background: 'var(--surface)', color: 'var(--text-1)' }}
                 />
@@ -183,13 +187,13 @@ export function RecipeEditButton({ recipeId, initial }: Props) {
                 value={story}
                 onChange={e => setStory(e.target.value)}
                 rows={3}
-                placeholder="레시피 소개"
+                placeholder={isEn ? 'Recipe description' : '레시피 소개'}
                 className="w-full px-4 py-3 rounded-xl border text-sm resize-none"
                 style={{ borderColor: 'var(--border)', background: 'var(--surface)', color: 'var(--text-2)' }}
               />
 
               <div className="flex items-center gap-3">
-                <span className="text-[13px] font-semibold" style={{ color: 'var(--text-2)' }}>인분 수</span>
+                <span className="text-[13px] font-semibold" style={{ color: 'var(--text-2)' }}>{t.submit.servingsLabel}</span>
                 <input
                   type="number"
                   min="1"
@@ -202,11 +206,11 @@ export function RecipeEditButton({ recipeId, initial }: Props) {
               </div>
 
               <div>
-                <span className="text-[13px] font-semibold block mb-2" style={{ color: 'var(--text-2)' }}>카테고리</span>
+                <span className="text-[13px] font-semibold block mb-2" style={{ color: 'var(--text-2)' }}>{t.submit.categoryLabel}</span>
                 <div className="flex gap-2">
                   {[
-                    { value: '', label: '🍳 일반 레시피' },
-                    { value: '베이킹', label: '🧁 베이킹' },
+                    { value: '', label: t.submit.categoryNormal },
+                    { value: '베이킹', label: t.submit.categoryBaking },
                   ].map(opt => (
                     <button
                       key={opt.value}
@@ -228,25 +232,27 @@ export function RecipeEditButton({ recipeId, initial }: Props) {
 
             {/* YouTube */}
             <section className="space-y-3">
-              <h3 className="text-[13px] font-bold uppercase tracking-wider" style={{ color: 'var(--text-3)' }}>유튜브 영상</h3>
+              <h3 className="text-[13px] font-bold uppercase tracking-wider" style={{ color: 'var(--text-3)' }}>
+                {isEn ? 'YouTube Video' : '유튜브 영상'}
+              </h3>
               <input
                 value={youtubeId}
                 onChange={e => setYoutubeId(e.target.value)}
-                placeholder="YouTube Video ID (예: dQw4w9WgXcQ)"
+                placeholder={isEn ? 'YouTube Video ID (e.g., dQw4w9WgXcQ)' : 'YouTube Video ID (예: dQw4w9WgXcQ)'}
                 className="w-full h-11 px-4 rounded-xl border text-sm"
                 style={{ borderColor: 'var(--border)', background: 'var(--surface)', color: 'var(--text-1)' }}
               />
               <input
                 value={youtubeCredit}
                 onChange={e => setYoutubeCredit(e.target.value)}
-                placeholder="채널명 (예: KBS 엔터테인먼트)"
+                placeholder={isEn ? 'Channel name (e.g., KBS Entertainment)' : '채널명 (예: KBS 엔터테인먼트)'}
                 className="w-full h-11 px-4 rounded-xl border text-sm"
                 style={{ borderColor: 'var(--border)', background: 'var(--surface)', color: 'var(--text-1)' }}
               />
               {youtubeId && (
                 <img
                   src={`https://img.youtube.com/vi/${youtubeId}/hqdefault.jpg`}
-                  alt="영상 미리보기"
+                  alt={isEn ? 'Video preview' : '영상 미리보기'}
                   className="w-full rounded-xl object-cover"
                   style={{ maxHeight: '160px', border: '1px solid var(--border)' }}
                 />
@@ -257,14 +263,14 @@ export function RecipeEditButton({ recipeId, initial }: Props) {
             <section className="space-y-3">
               <div className="flex items-center justify-between">
                 <h3 className="text-[13px] font-bold uppercase tracking-wider" style={{ color: 'var(--text-3)' }}>
-                  재료 ({ingredients.length}가지)
+                  {isEn ? `Ingredients (${ingredients.length})` : `재료 (${ingredients.length}가지)`}
                 </h3>
                 <button
                   onClick={addIng}
                   className="flex items-center gap-1 text-[12px] font-bold px-3 py-1.5 rounded-xl touch-manipulation"
                   style={{ background: 'var(--brand-light)', color: 'var(--brand)' }}
                 >
-                  <Plus size={13} strokeWidth={2.5} /> 추가
+                  <Plus size={13} strokeWidth={2.5} /> {t.fridge.addItemShort}
                 </button>
               </div>
 
@@ -276,7 +282,7 @@ export function RecipeEditButton({ recipeId, initial }: Props) {
                       <input
                         value={ing.name}
                         onChange={e => updateIng(idx, { name: e.target.value })}
-                        placeholder="재료명"
+                        placeholder={isEn ? 'Ingredient name' : '재료명'}
                         className="flex-1 h-9 px-3 rounded-lg border text-sm font-semibold"
                         style={{ borderColor: 'var(--border)', background: 'var(--bg)', color: 'var(--text-1)' }}
                       />
@@ -290,14 +296,14 @@ export function RecipeEditButton({ recipeId, initial }: Props) {
                         type="number"
                         value={ing.base_amount}
                         onChange={e => updateIng(idx, { base_amount: parseFloat(e.target.value) || 0 })}
-                        placeholder="양"
+                        placeholder={isEn ? 'Qty' : '양'}
                         className="w-20 h-9 px-3 rounded-lg border text-sm text-center"
                         style={{ borderColor: 'var(--border)', background: 'var(--bg)', color: 'var(--text-1)' }}
                       />
                       <input
                         value={ing.unit}
                         onChange={e => updateIng(idx, { unit: e.target.value })}
-                        placeholder="단위"
+                        placeholder={isEn ? 'Unit' : '단위'}
                         className="w-16 h-9 px-3 rounded-lg border text-sm text-center"
                         style={{ borderColor: 'var(--border)', background: 'var(--bg)', color: 'var(--text-1)' }}
                       />
@@ -308,7 +314,11 @@ export function RecipeEditButton({ recipeId, initial }: Props) {
                           className="w-full h-9 px-3 pr-8 rounded-lg border text-sm appearance-none"
                           style={{ borderColor: 'var(--border)', background: 'var(--bg)', color: 'var(--text-2)' }}
                         >
-                          {ING_TYPES.map(t => <option key={t} value={t}>{ING_TYPE_LABEL[t]}</option>)}
+                          {ING_TYPES.map(ingType => (
+                            <option key={ingType} value={ingType}>
+                              {t.recipe.ingredientType[ingType]}
+                            </option>
+                          ))}
                         </select>
                         <ChevronDown size={13} className="absolute right-2.5 top-1/2 -translate-y-1/2 pointer-events-none" color="var(--text-3)" />
                       </div>
@@ -322,14 +332,14 @@ export function RecipeEditButton({ recipeId, initial }: Props) {
             <section className="space-y-3 pb-8">
               <div className="flex items-center justify-between">
                 <h3 className="text-[13px] font-bold uppercase tracking-wider" style={{ color: 'var(--text-3)' }}>
-                  조리 단계 ({steps.length}단계)
+                  {isEn ? `Steps (${steps.length})` : `조리 단계 (${steps.length}단계)`}
                 </h3>
                 <button
                   onClick={addStep}
                   className="flex items-center gap-1 text-[12px] font-bold px-3 py-1.5 rounded-xl touch-manipulation"
                   style={{ background: 'var(--brand-light)', color: 'var(--brand)' }}
                 >
-                  <Plus size={13} strokeWidth={2.5} /> 추가
+                  <Plus size={13} strokeWidth={2.5} /> {t.fridge.addItemShort}
                 </button>
               </div>
 
@@ -345,7 +355,7 @@ export function RecipeEditButton({ recipeId, initial }: Props) {
                       <input
                         value={step.action}
                         onChange={e => updateStep(idx, { action: e.target.value })}
-                        placeholder="단계명 (예: 재료 볶기)"
+                        placeholder={isEn ? 'Step name (e.g., Stir-fry ingredients)' : '단계명 (예: 재료 볶기)'}
                         className="flex-1 h-9 px-3 rounded-lg border text-sm font-semibold"
                         style={{ borderColor: 'var(--border)', background: 'var(--bg)', color: 'var(--text-1)' }}
                       />
@@ -358,13 +368,13 @@ export function RecipeEditButton({ recipeId, initial }: Props) {
                       value={step.description}
                       onChange={e => updateStep(idx, { description: e.target.value })}
                       rows={2}
-                      placeholder="설명"
+                      placeholder={isEn ? 'Description' : '설명'}
                       className="w-full px-3 py-2 rounded-lg border text-[13px] resize-none"
                       style={{ borderColor: 'var(--border)', background: 'var(--bg)', color: 'var(--text-2)' }}
                     />
                     <div className="flex gap-2">
                       <div className="flex items-center gap-2 flex-1">
-                        <span className="text-[12px] shrink-0" style={{ color: 'var(--text-3)' }}>시간</span>
+                        <span className="text-[12px] shrink-0" style={{ color: 'var(--text-3)' }}>{isEn ? 'Time' : '시간'}</span>
                         <input
                           type="number"
                           min="1"
@@ -373,7 +383,7 @@ export function RecipeEditButton({ recipeId, initial }: Props) {
                           className="w-16 h-9 px-2 rounded-lg border text-sm text-center"
                           style={{ borderColor: 'var(--border)', background: 'var(--bg)', color: 'var(--text-1)' }}
                         />
-                        <span className="text-[12px]" style={{ color: 'var(--text-3)' }}>분</span>
+                        <span className="text-[12px]" style={{ color: 'var(--text-3)' }}>{t.recipe.minutes}</span>
                       </div>
                       <div className="relative flex-1">
                         <select
@@ -382,7 +392,7 @@ export function RecipeEditButton({ recipeId, initial }: Props) {
                           className="w-full h-9 px-3 pr-8 rounded-lg border text-sm appearance-none"
                           style={{ borderColor: 'var(--border)', background: 'var(--bg)', color: 'var(--text-2)' }}
                         >
-                          {BURNER_OPTIONS.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
+                          {BURNER_OPTIONS().map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
                         </select>
                         <ChevronDown size={13} className="absolute right-2.5 top-1/2 -translate-y-1/2 pointer-events-none" color="var(--text-3)" />
                       </div>

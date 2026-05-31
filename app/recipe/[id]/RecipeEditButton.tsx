@@ -1,6 +1,8 @@
 'use client';
 import { useState } from 'react';
-import { X, Plus, Trash2, ChevronDown, Loader2, Check } from 'lucide-react';
+import { useSession, signIn } from 'next-auth/react';
+import { X, Plus, Trash2, ChevronDown, Loader2, Check, GitFork } from 'lucide-react';
+import { useRouter } from 'next/navigation';
 import { t, isEn } from '@/i18n';
 import type { RecipeIngredient, RecipeStep } from '@/types';
 
@@ -27,10 +29,13 @@ const BURNER_OPTIONS = () => [
 ];
 
 export function RecipeEditButton({ recipeId, initial }: Props) {
+  const { data: session } = useSession();
+  const router = useRouter();
   const [open, setOpen] = useState(false);
   const [saving, setSaving] = useState(false);
   const [done, setDone] = useState(false);
   const [error, setError] = useState('');
+  const [newId, setNewId] = useState('');
 
   const [title, setTitle] = useState(initial.title);
   const [thumbnail, setThumbnail] = useState(initial.thumbnail);
@@ -58,18 +63,21 @@ export function RecipeEditButton({ recipeId, initial }: Props) {
     setSteps(initial.steps.map(s => ({ ...s })));
     setError('');
     setDone(false);
+    setNewId('');
   }
 
-  function handleOpen() { resetForm(); setOpen(true); }
+  function handleOpen() {
+    if (!session) { signIn('google'); return; }
+    resetForm();
+    setOpen(true);
+  }
   function handleClose() { setOpen(false); }
 
   // Ingredient helpers
   function updateIng(idx: number, patch: Partial<RecipeIngredient>) {
     setIngredients(list => list.map((ing, i) => i === idx ? { ...ing, ...patch } : ing));
   }
-  function removeIng(idx: number) {
-    setIngredients(list => list.filter((_, i) => i !== idx));
-  }
+  function removeIng(idx: number) { setIngredients(list => list.filter((_, i) => i !== idx)); }
   function addIng() {
     setIngredients(list => [...list, { ingredient_id: `new_${Date.now()}`, name: '', base_amount: 0, unit: 'g', type: 'main' }]);
   }
@@ -78,37 +86,45 @@ export function RecipeEditButton({ recipeId, initial }: Props) {
   function updateStep(idx: number, patch: Partial<RecipeStep>) {
     setSteps(list => list.map((s, i) => i === idx ? { ...s, ...patch } : s));
   }
-  function removeStep(idx: number) {
-    setSteps(list => list.filter((_, i) => i !== idx));
-  }
+  function removeStep(idx: number) { setSteps(list => list.filter((_, i) => i !== idx)); }
   function addStep() {
     setSteps(list => [...list, { burner: null, action: '', duration_sec: 60, description: '' }]);
   }
 
   async function handleSave() {
     if (!title.trim()) { setError(isEn ? 'Please enter a title.' : '제목을 입력해주세요.'); return; }
+    if (!session) { signIn('google'); return; }
+
     setSaving(true);
     setError('');
     try {
-      const res = await fetch(`/api/recipes/${recipeId}`, {
-        method: 'PUT',
+      // Always fork: create a new recipe attributed to the current user
+      const res = await fetch('/api/recipes', {
+        method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           title: title.trim(),
           thumbnail,
           story: story.trim(),
           servings: parseInt(servings) || 2,
-          youtube_id: youtubeId.trim() || null,
+          youtube_id: youtubeId.trim() || undefined,
           youtube_credit: youtubeCredit.trim(),
-          category: category || null,
+          category: category || undefined,
+          forked_from: recipeId,
+          author_id: session.user.id,
+          author_name: session.user.name ?? '',
           ingredients: ingredients.filter(i => i.name.trim()),
           steps: steps.filter(s => s.action.trim()),
         }),
       });
-      const data = await res.json() as { ok?: boolean; error?: string };
-      if (data.ok) {
+      const data = await res.json() as { id?: string; error?: string };
+      if (data.id) {
         setDone(true);
-        setTimeout(() => { handleClose(); }, 1500);
+        setNewId(data.id);
+        setTimeout(() => {
+          handleClose();
+          router.push(`/recipe/${data.id}`);
+        }, 1200);
       } else {
         setError(data.error ?? (isEn ? 'Save failed.' : '저장에 실패했습니다.'));
       }
@@ -119,14 +135,17 @@ export function RecipeEditButton({ recipeId, initial }: Props) {
     }
   }
 
+  const btnLabel = isEn ? 'Make It Mine' : '나의 레시피로 만들기';
+
   return (
     <>
       <button
         onClick={handleOpen}
-        className="w-full h-11 rounded-2xl text-sm font-semibold touch-manipulation"
+        className="w-full h-11 rounded-2xl text-sm font-semibold touch-manipulation flex items-center justify-center gap-2"
         style={{ border: '1px solid var(--border)', color: 'var(--text-3)', background: 'var(--surface)' }}
       >
-        ✏️ {t.recipe.editRecipe}
+        <GitFork size={14} strokeWidth={2} />
+        {btnLabel}
       </button>
 
       {open && (
@@ -138,7 +157,12 @@ export function RecipeEditButton({ recipeId, initial }: Props) {
                     style={{ background: 'var(--bg)' }}>
               <X size={18} color="var(--text-2)" strokeWidth={2} />
             </button>
-            <span className="font-bold text-[15px]" style={{ color: 'var(--text-1)' }}>{t.recipe.editRecipe}</span>
+            <div className="text-center">
+              <span className="font-bold text-[15px]" style={{ color: 'var(--text-1)' }}>{btnLabel}</span>
+              <p className="text-[11px]" style={{ color: 'var(--text-3)' }}>
+                {isEn ? 'A new recipe will be created under your name' : '내 이름으로 새 레시피가 등록됩니다'}
+              </p>
+            </div>
             <button
               onClick={handleSave}
               disabled={saving || done}
@@ -146,15 +170,23 @@ export function RecipeEditButton({ recipeId, initial }: Props) {
               style={{ background: done ? 'var(--green)' : 'var(--brand)' }}
             >
               {done
-                ? <><Check size={14} strokeWidth={2.5} /> {isEn ? 'Done' : '완료'}</>
+                ? <><Check size={14} strokeWidth={2.5} /> {isEn ? 'Saved!' : '저장 완료!'}</>
                 : saving
                   ? <><Loader2 size={14} className="animate-spin" /> {isEn ? 'Saving…' : '저장 중'}</>
-                  : t.common.save}
+                  : isEn ? 'Save' : '저장'}
             </button>
           </div>
 
           {/* Scrollable body */}
           <div className="flex-1 overflow-y-auto px-4 py-5 space-y-6 max-w-md mx-auto w-full">
+
+            {/* Author badge */}
+            <div className="flex items-center gap-2 px-3 py-2 rounded-xl"
+                 style={{ background: 'var(--brand-light)', border: '1px solid rgba(201,75,42,0.15)' }}>
+              <span className="text-[12px]" style={{ color: 'var(--brand)' }}>
+                ✍️ {isEn ? 'Author' : '작성자'}: <strong>{session?.user?.name}</strong>
+              </span>
+            </div>
 
             {error && (
               <div className="rounded-xl px-4 py-3 text-sm" style={{ background: '#FEE2E2', color: '#DC2626' }}>
@@ -195,9 +227,7 @@ export function RecipeEditButton({ recipeId, initial }: Props) {
               <div className="flex items-center gap-3">
                 <span className="text-[13px] font-semibold" style={{ color: 'var(--text-2)' }}>{t.submit.servingsLabel}</span>
                 <input
-                  type="number"
-                  min="1"
-                  max="20"
+                  type="number" min="1" max="20"
                   value={servings}
                   onChange={e => setServings(e.target.value)}
                   className="w-20 h-10 px-3 rounded-xl border text-center font-bold"
@@ -245,14 +275,14 @@ export function RecipeEditButton({ recipeId, initial }: Props) {
               <input
                 value={youtubeCredit}
                 onChange={e => setYoutubeCredit(e.target.value)}
-                placeholder={isEn ? 'Channel name (e.g., KBS Entertainment)' : '채널명 (예: KBS 엔터테인먼트)'}
+                placeholder={isEn ? 'Channel name' : '채널명'}
                 className="w-full h-11 px-4 rounded-xl border text-sm"
                 style={{ borderColor: 'var(--border)', background: 'var(--surface)', color: 'var(--text-1)' }}
               />
               {youtubeId && (
                 <img
                   src={`https://img.youtube.com/vi/${youtubeId}/hqdefault.jpg`}
-                  alt={isEn ? 'Video preview' : '영상 미리보기'}
+                  alt=""
                   className="w-full rounded-xl object-cover"
                   style={{ maxHeight: '160px', border: '1px solid var(--border)' }}
                 />
@@ -265,59 +295,43 @@ export function RecipeEditButton({ recipeId, initial }: Props) {
                 <h3 className="text-[13px] font-bold uppercase tracking-wider" style={{ color: 'var(--text-3)' }}>
                   {isEn ? `Ingredients (${ingredients.length})` : `재료 (${ingredients.length}가지)`}
                 </h3>
-                <button
-                  onClick={addIng}
+                <button onClick={addIng}
                   className="flex items-center gap-1 text-[12px] font-bold px-3 py-1.5 rounded-xl touch-manipulation"
-                  style={{ background: 'var(--brand-light)', color: 'var(--brand)' }}
-                >
+                  style={{ background: 'var(--brand-light)', color: 'var(--brand)' }}>
                   <Plus size={13} strokeWidth={2.5} /> {t.fridge.addItemShort}
                 </button>
               </div>
-
               <div className="space-y-2">
                 {ingredients.map((ing, idx) => (
                   <div key={idx} className="rounded-xl p-3 space-y-2"
                        style={{ background: 'var(--surface)', border: '1px solid var(--border)' }}>
                     <div className="flex items-center gap-2">
-                      <input
-                        value={ing.name}
-                        onChange={e => updateIng(idx, { name: e.target.value })}
+                      <input value={ing.name} onChange={e => updateIng(idx, { name: e.target.value })}
                         placeholder={isEn ? 'Ingredient name' : '재료명'}
                         className="flex-1 h-9 px-3 rounded-lg border text-sm font-semibold"
-                        style={{ borderColor: 'var(--border)', background: 'var(--bg)', color: 'var(--text-1)' }}
-                      />
-                      <button onClick={() => removeIng(idx)} className="shrink-0 p-1.5 rounded-lg touch-manipulation"
+                        style={{ borderColor: 'var(--border)', background: 'var(--bg)', color: 'var(--text-1)' }} />
+                      <button onClick={() => removeIng(idx)} className="shrink-0 p-1.5 rounded-lg"
                               style={{ background: '#FEE2E2' }}>
                         <Trash2 size={14} color="#DC2626" strokeWidth={2} />
                       </button>
                     </div>
                     <div className="flex gap-2">
-                      <input
-                        type="number"
-                        value={ing.base_amount}
+                      <input type="number" value={ing.base_amount}
                         onChange={e => updateIng(idx, { base_amount: parseFloat(e.target.value) || 0 })}
                         placeholder={isEn ? 'Qty' : '양'}
                         className="w-20 h-9 px-3 rounded-lg border text-sm text-center"
-                        style={{ borderColor: 'var(--border)', background: 'var(--bg)', color: 'var(--text-1)' }}
-                      />
-                      <input
-                        value={ing.unit}
-                        onChange={e => updateIng(idx, { unit: e.target.value })}
+                        style={{ borderColor: 'var(--border)', background: 'var(--bg)', color: 'var(--text-1)' }} />
+                      <input value={ing.unit} onChange={e => updateIng(idx, { unit: e.target.value })}
                         placeholder={isEn ? 'Unit' : '단위'}
                         className="w-16 h-9 px-3 rounded-lg border text-sm text-center"
-                        style={{ borderColor: 'var(--border)', background: 'var(--bg)', color: 'var(--text-1)' }}
-                      />
+                        style={{ borderColor: 'var(--border)', background: 'var(--bg)', color: 'var(--text-1)' }} />
                       <div className="relative flex-1">
-                        <select
-                          value={ing.type}
+                        <select value={ing.type}
                           onChange={e => updateIng(idx, { type: e.target.value as RecipeIngredient['type'] })}
                           className="w-full h-9 px-3 pr-8 rounded-lg border text-sm appearance-none"
-                          style={{ borderColor: 'var(--border)', background: 'var(--bg)', color: 'var(--text-2)' }}
-                        >
+                          style={{ borderColor: 'var(--border)', background: 'var(--bg)', color: 'var(--text-2)' }}>
                           {ING_TYPES.map(ingType => (
-                            <option key={ingType} value={ingType}>
-                              {t.recipe.ingredientType[ingType]}
-                            </option>
+                            <option key={ingType} value={ingType}>{t.recipe.ingredientType[ingType]}</option>
                           ))}
                         </select>
                         <ChevronDown size={13} className="absolute right-2.5 top-1/2 -translate-y-1/2 pointer-events-none" color="var(--text-3)" />
@@ -334,64 +348,47 @@ export function RecipeEditButton({ recipeId, initial }: Props) {
                 <h3 className="text-[13px] font-bold uppercase tracking-wider" style={{ color: 'var(--text-3)' }}>
                   {isEn ? `Steps (${steps.length})` : `조리 단계 (${steps.length}단계)`}
                 </h3>
-                <button
-                  onClick={addStep}
+                <button onClick={addStep}
                   className="flex items-center gap-1 text-[12px] font-bold px-3 py-1.5 rounded-xl touch-manipulation"
-                  style={{ background: 'var(--brand-light)', color: 'var(--brand)' }}
-                >
+                  style={{ background: 'var(--brand-light)', color: 'var(--brand)' }}>
                   <Plus size={13} strokeWidth={2.5} /> {t.fridge.addItemShort}
                 </button>
               </div>
-
               <div className="space-y-2">
                 {steps.map((step, idx) => (
                   <div key={idx} className="rounded-xl p-3 space-y-2"
                        style={{ background: 'var(--surface)', border: '1px solid var(--border)' }}>
                     <div className="flex items-center gap-2">
                       <span className="w-6 h-6 rounded-full flex items-center justify-center text-[11px] font-black shrink-0"
-                            style={{ background: 'var(--brand)', color: 'white' }}>
-                        {idx + 1}
-                      </span>
-                      <input
-                        value={step.action}
-                        onChange={e => updateStep(idx, { action: e.target.value })}
-                        placeholder={isEn ? 'Step name (e.g., Stir-fry ingredients)' : '단계명 (예: 재료 볶기)'}
+                            style={{ background: 'var(--brand)', color: 'white' }}>{idx + 1}</span>
+                      <input value={step.action} onChange={e => updateStep(idx, { action: e.target.value })}
+                        placeholder={isEn ? 'Step name' : '단계명'}
                         className="flex-1 h-9 px-3 rounded-lg border text-sm font-semibold"
-                        style={{ borderColor: 'var(--border)', background: 'var(--bg)', color: 'var(--text-1)' }}
-                      />
-                      <button onClick={() => removeStep(idx)} className="shrink-0 p-1.5 rounded-lg touch-manipulation"
+                        style={{ borderColor: 'var(--border)', background: 'var(--bg)', color: 'var(--text-1)' }} />
+                      <button onClick={() => removeStep(idx)} className="shrink-0 p-1.5 rounded-lg"
                               style={{ background: '#FEE2E2' }}>
                         <Trash2 size={14} color="#DC2626" strokeWidth={2} />
                       </button>
                     </div>
-                    <textarea
-                      value={step.description}
-                      onChange={e => updateStep(idx, { description: e.target.value })}
-                      rows={2}
-                      placeholder={isEn ? 'Description' : '설명'}
+                    <textarea value={step.description} onChange={e => updateStep(idx, { description: e.target.value })}
+                      rows={2} placeholder={isEn ? 'Description' : '설명'}
                       className="w-full px-3 py-2 rounded-lg border text-[13px] resize-none"
-                      style={{ borderColor: 'var(--border)', background: 'var(--bg)', color: 'var(--text-2)' }}
-                    />
+                      style={{ borderColor: 'var(--border)', background: 'var(--bg)', color: 'var(--text-2)' }} />
                     <div className="flex gap-2">
                       <div className="flex items-center gap-2 flex-1">
                         <span className="text-[12px] shrink-0" style={{ color: 'var(--text-3)' }}>{isEn ? 'Time' : '시간'}</span>
-                        <input
-                          type="number"
-                          min="1"
+                        <input type="number" min="1"
                           value={Math.round(step.duration_sec / 60)}
                           onChange={e => updateStep(idx, { duration_sec: (parseInt(e.target.value) || 1) * 60 })}
                           className="w-16 h-9 px-2 rounded-lg border text-sm text-center"
-                          style={{ borderColor: 'var(--border)', background: 'var(--bg)', color: 'var(--text-1)' }}
-                        />
+                          style={{ borderColor: 'var(--border)', background: 'var(--bg)', color: 'var(--text-1)' }} />
                         <span className="text-[12px]" style={{ color: 'var(--text-3)' }}>{t.recipe.minutes}</span>
                       </div>
                       <div className="relative flex-1">
-                        <select
-                          value={step.burner === null ? '' : String(step.burner)}
+                        <select value={step.burner === null ? '' : String(step.burner)}
                           onChange={e => updateStep(idx, { burner: e.target.value === '' ? null : Number(e.target.value) as 1 | 2 })}
                           className="w-full h-9 px-3 pr-8 rounded-lg border text-sm appearance-none"
-                          style={{ borderColor: 'var(--border)', background: 'var(--bg)', color: 'var(--text-2)' }}
-                        >
+                          style={{ borderColor: 'var(--border)', background: 'var(--bg)', color: 'var(--text-2)' }}>
                           {BURNER_OPTIONS().map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
                         </select>
                         <ChevronDown size={13} className="absolute right-2.5 top-1/2 -translate-y-1/2 pointer-events-none" color="var(--text-3)" />

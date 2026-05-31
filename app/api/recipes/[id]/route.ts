@@ -1,10 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
 
-
 export const dynamic = 'force-dynamic';
 
 async function db() {
-  const { neon } = await import("@neondatabase/serverless");
+  const { neon } = await import('@neondatabase/serverless');
   return neon(process.env.DATABASE_URL!);
 }
 
@@ -15,7 +14,7 @@ function isAdmin(req: NextRequest): boolean {
 
 type Params = { id: string };
 
-// Public PUT: wiki-style recipe replacement (anyone can update content)
+// PUT: wiki-style edit (existing DB recipe) OR fork-save (new recipe from client)
 export async function PUT(req: NextRequest, { params }: { params: Promise<Params> }) {
   try {
     const sql = await db();
@@ -24,7 +23,7 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<Params
       title?: string;
       story?: string;
       servings?: number;
-      youtube_id?: string;
+      youtube_id?: string | null;
       youtube_credit?: string;
       thumbnail?: string;
       category?: string | null;
@@ -34,20 +33,35 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<Params
 
     await sql`ALTER TABLE recipes ADD COLUMN IF NOT EXISTS category TEXT`.catch(() => {});
 
+    const isCombo = body.steps?.some(s => s.burner === 2) ?? false;
+
+    // Upsert: handles both existing DB recipes and mock recipes being edited for the first time
     await sql`
-      UPDATE recipes SET
-        title          = COALESCE(${body.title ?? null}, title),
-        story          = COALESCE(${body.story ?? null}, story),
-        servings       = COALESCE(${body.servings ?? null}, servings),
-        youtube_id     = ${body.youtube_id || null},
+      INSERT INTO recipes (id, title, story, thumbnail, is_combo, servings, youtube_id, youtube_credit, category, status, submitted_by)
+      VALUES (
+        ${id},
+        ${body.title ?? 'Untitled'},
+        ${body.story ?? ''},
+        ${body.thumbnail ?? '🍳'},
+        ${isCombo},
+        ${body.servings ?? 2},
+        ${body.youtube_id ?? null},
+        ${body.youtube_credit ?? ''},
+        ${body.category ?? null},
+        'published',
+        'wiki'
+      )
+      ON CONFLICT (id) DO UPDATE SET
+        title          = COALESCE(${body.title ?? null}, recipes.title),
+        story          = COALESCE(${body.story ?? null}, recipes.story),
+        servings       = COALESCE(${body.servings ?? null}, recipes.servings),
+        youtube_id     = ${body.youtube_id ?? null},
         youtube_credit = ${body.youtube_credit ?? ''},
-        thumbnail      = COALESCE(${body.thumbnail ?? null}, thumbnail),
-        category       = ${'category' in body ? (body.category ?? null) : null},
+        thumbnail      = COALESCE(${body.thumbnail ?? null}, recipes.thumbnail),
+        category       = ${body.category ?? null},
         updated_at     = NOW()
-      WHERE id = ${id}
     `;
 
-    // Replace ingredients and steps in parallel
     if (body.ingredients) {
       await sql`DELETE FROM recipe_ingredients WHERE recipe_id = ${id}`;
       await Promise.all(body.ingredients.map((ing, i) => {

@@ -11,6 +11,7 @@ import { Pause, Play, X } from 'lucide-react';
 import { useApp } from '@/context/AppContext';
 import { useCookTimer } from '@/hooks/useTimer';
 import { adjustedAmount, dominantTasteLevel } from '@/utils/tasteMatrix';
+import { t } from '@/i18n';
 import type { AdjustedIngredient, VoiceCommand } from '@/types';
 
 export function CookScreen() {
@@ -27,7 +28,7 @@ export function CookScreen() {
 
   if (!recipe || !cs) {
     return (
-      <ScreenWrapper title="조리 모드">
+      <ScreenWrapper title={t.cook.title}>
         <div className="flex flex-col items-center justify-center h-64 gap-4">
           <div className="w-20 h-20 rounded-3xl flex items-center justify-center text-4xl"
                style={{ background: 'var(--brand-light)' }}>
@@ -35,10 +36,10 @@ export function CookScreen() {
           </div>
           <div className="text-center">
             <p className="font-bold text-[16px]" style={{ color: 'var(--text-1)' }}>
-              조리할 레시피를 선택해 주세요
+              {t.cook.noRecipe}
             </p>
             <p className="text-[13px] mt-1" style={{ color: 'var(--text-3)' }}>
-              레시피 탭에서 레시피를 선택하세요
+              {t.cook.noRecipeHint}
             </p>
           </div>
           <button
@@ -46,7 +47,7 @@ export function CookScreen() {
             className="px-6 py-3 rounded-2xl font-bold text-[14px] touch-manipulation"
             style={{ background: 'var(--brand)', color: 'white' }}
           >
-            레시피 보러 가기
+            {t.cook.goToRecipes}
           </button>
         </div>
       </ScreenWrapper>
@@ -95,7 +96,7 @@ export function CookScreen() {
 
   return (
     <>
-      <ScreenWrapper title={recipe.title} subtitle={recipe.isCombo ? '2구 병렬 조리 중' : '1구 단독 조리 중'} noPad>
+      <ScreenWrapper title={recipe.title} subtitle={recipe.isCombo ? t.cook.parallelCooking : t.cook.singleCooking} noPad>
         <div className="px-4 pt-4 space-y-4 pb-4">
           <div className="flex items-center justify-between flex-wrap gap-2">
             <WakeLockToggle />
@@ -106,8 +107,8 @@ export function CookScreen() {
                 style={{ background: 'var(--bg)', color: 'var(--text-2)' }}
               >
                 {cs.isRunning
-                  ? <><Pause size={13} strokeWidth={2} /> 일시정지</>
-                  : <><Play size={13} strokeWidth={2} /> 재개</>
+                  ? <><Pause size={13} strokeWidth={2} /> {t.cook.pause}</>
+                  : <><Play size={13} strokeWidth={2} /> {t.cook.resume}</>
                 }
               </button>
               <button
@@ -115,7 +116,7 @@ export function CookScreen() {
                 className="flex items-center gap-1.5 px-4 py-2 rounded-full text-[13px] font-semibold touch-manipulation"
                 style={{ background: 'var(--bg)', color: 'var(--text-3)' }}
               >
-                <X size={13} strokeWidth={2} /> 종료
+                <X size={13} strokeWidth={2} /> {t.cook.quit}
               </button>
             </div>
           </div>
@@ -158,7 +159,7 @@ export function CookScreen() {
               className="w-full h-[54px] rounded-2xl font-bold text-[15px] touch-manipulation"
               style={{ background: 'var(--green)', color: 'white', boxShadow: '0 2px 12px rgba(43,122,79,0.3)' }}
             >
-              조리 완료 — 재료 차감하기
+              {t.cook.completeDeduct}
             </button>
           )}
         </div>

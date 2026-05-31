@@ -9,6 +9,7 @@ import { QuickAddPanel } from '@/components/fridge/QuickAddPanel';
 import { Plus } from 'lucide-react';
 import { useApp } from '@/context/AppContext';
 import { getDaysUntilExpiry } from '@/utils/expiry';
+import { t, isEn } from '@/i18n';
 import type { FridgeItem } from '@/types';
 
 export function FridgeScreen() {
@@ -51,14 +52,20 @@ export function FridgeScreen() {
       style={{ background: 'var(--brand)', color: 'white' }}
     >
       <Plus size={14} strokeWidth={2.5} />
-      추가
+      {t.fridge.addItemShort}
     </button>
   );
 
+  const fridgeSubtitle = isEmpty
+    ? t.fridge.subtitleEmpty
+    : isEn
+      ? `${state.fridgeItems.length} ingredient${state.fridgeItems.length !== 1 ? 's' : ''} stored`
+      : `${state.fridgeItems.length}가지 식재료 보관 중`;
+
   return (
     <ScreenWrapper
-      title="냉장고"
-      subtitle={isEmpty ? '식재료를 등록해 레시피를 추천받아요' : `${state.fridgeItems.length}가지 식재료 보관 중`}
+      title={t.fridge.title}
+      subtitle={fridgeSubtitle}
       action={addButton}
     >
       <div className="space-y-3">
@@ -77,27 +84,27 @@ export function FridgeScreen() {
                     className="flex-1 h-10 rounded-xl text-[13px] font-semibold touch-manipulation"
                     style={{ border: '1px solid var(--border)', color: 'var(--text-2)', background: 'var(--bg)' }}
                   >
-                    직접 입력
+                    {t.fridge.directInput}
                   </button>
                   <button
                     onClick={() => { dispatch({ type: 'LOAD_SAMPLE_DATA' }); setShowQuickAdd(false); }}
                     className="flex-1 h-10 rounded-xl text-[13px] font-semibold touch-manipulation"
                     style={{ border: '1px solid var(--border)', color: 'var(--text-2)', background: 'var(--bg)' }}
                   >
-                    샘플로 시작
+                    {t.fridge.startSample}
                   </button>
                 </div>
               </div>
             ) : (
               <div className="flex flex-col items-center py-12 gap-4">
                 <span className="text-5xl">🫙</span>
-                <p className="text-[15px] font-bold" style={{ color: 'var(--text-1)' }}>냉장고가 비어있어요</p>
+                <p className="text-[15px] font-bold" style={{ color: 'var(--text-1)' }}>{t.fridge.empty}</p>
                 <button
                   onClick={() => setShowQuickAdd(true)}
                   className="px-6 h-11 rounded-2xl font-bold text-[14px] touch-manipulation"
                   style={{ background: 'var(--brand)', color: 'white' }}
                 >
-                  재료 추가하기
+                  {t.common.addIngredients}
                 </button>
               </div>
             )}

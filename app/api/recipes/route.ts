@@ -108,9 +108,9 @@ export async function POST(req: NextRequest) {
 
     await sql`ALTER TABLE recipes ADD COLUMN IF NOT EXISTS category TEXT`.catch(() => {});
 
-    // Honeypot — bots fill it, humans leave it blank
+    // Honeypot — bots fill it, humans leave it blank; fake success so bots think it worked
     if (body._hp) {
-      return NextResponse.json({ id: 'ok', status: 'published' }, { status: 201 });
+      return NextResponse.json({ id: `sp_${Date.now()}`, status: 'published' }, { status: 201 });
     }
 
     // YouTube ID required
@@ -166,23 +166,21 @@ export async function POST(req: NextRequest) {
       )
     `;
 
-    for (let i = 0; i < body.ingredients.length; i++) {
-      const ing = body.ingredients[i];
+    await Promise.all(body.ingredients.map((ing, i) => {
       const amt = typeof ing.base_amount === 'number' ? ing.base_amount : (parseFloat(String(ing.base_amount)) || 0);
-      await sql`
+      return sql`
         INSERT INTO recipe_ingredients (recipe_id, ingredient_id, name, base_amount, unit, type, sort_order)
         VALUES (${id}, ${ing.ingredient_id || ing.name}, ${ing.name}, ${amt}, ${ing.unit}, ${ing.type}, ${i})
       `;
-    }
+    }));
 
-    for (let i = 0; i < body.steps.length; i++) {
-      const step = body.steps[i];
+    await Promise.all(body.steps.map((step, i) => {
       const burner = step.burner === 1 || step.burner === 2 ? step.burner : null;
-      await sql`
+      return sql`
         INSERT INTO recipe_steps (recipe_id, burner, action, duration_sec, description, sort_order)
         VALUES (${id}, ${burner}, ${step.action}, ${step.duration_sec}, ${step.description ?? ''}, ${i})
       `;
-    }
+    }));
 
     return NextResponse.json({ id, status: 'published' }, { status: 201 });
   } catch (err) {

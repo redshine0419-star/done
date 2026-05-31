@@ -29,9 +29,10 @@ type AppAction =
   | { type: 'TOGGLE_FAVORITE'; payload: string };
 
 function burnerSteps(recipe: Recipe, burner: 1 | 2) {
-  const isDessert = recipe.steps.every(s => s.burner === null);
-  if (isDessert && burner === 1) return recipe.steps;
-  return recipe.steps.filter(s => s.burner === burner);
+  const allNull = recipe.steps.every(s => s.burner === null);
+  if (allNull) return burner === 1 ? recipe.steps : [];
+  // null-burner (prep/rest) steps belong to burner 1 so they are never dropped
+  return recipe.steps.filter(s => s.burner === burner || (burner === 1 && s.burner === null));
 }
 
 function reducer(state: AppState, action: AppAction): AppState {

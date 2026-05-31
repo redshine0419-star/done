@@ -149,7 +149,8 @@ export default function RecipeSubmitPage() {
         res = await fetch(`/api/recipes/${updateTargetId}`, {
           method: 'PUT',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(recipe),
+          // Explicitly include category so undefined isn't omitted by JSON.stringify
+          body: JSON.stringify({ ...recipe, category: recipe.category ?? null }),
         });
         const data = await res.json() as { ok?: boolean; error?: string };
         if (data.ok) {

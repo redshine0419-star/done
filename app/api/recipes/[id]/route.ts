@@ -39,7 +39,7 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<Params
         title          = COALESCE(${body.title ?? null}, title),
         story          = COALESCE(${body.story ?? null}, story),
         servings       = COALESCE(${body.servings ?? null}, servings),
-        youtube_id     = ${body.youtube_id ?? null},
+        youtube_id     = ${body.youtube_id || null},
         youtube_credit = ${body.youtube_credit ?? ''},
         thumbnail      = COALESCE(${body.thumbnail ?? null}, thumbnail),
         category       = ${'category' in body ? (body.category ?? null) : null},
@@ -47,29 +47,27 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<Params
       WHERE id = ${id}
     `;
 
-    // Replace ingredients and steps if provided
+    // Replace ingredients and steps in parallel
     if (body.ingredients) {
       await sql`DELETE FROM recipe_ingredients WHERE recipe_id = ${id}`;
-      for (let i = 0; i < body.ingredients.length; i++) {
-        const ing = body.ingredients[i];
+      await Promise.all(body.ingredients.map((ing, i) => {
         const amt = typeof ing.base_amount === 'number' ? ing.base_amount : (parseFloat(String(ing.base_amount)) || 0);
-        await sql`
+        return sql`
           INSERT INTO recipe_ingredients (recipe_id, ingredient_id, name, base_amount, unit, type, sort_order)
           VALUES (${id}, ${ing.ingredient_id || ing.name}, ${ing.name}, ${amt}, ${ing.unit}, ${ing.type}, ${i})
         `;
-      }
+      }));
     }
 
     if (body.steps) {
       await sql`DELETE FROM recipe_steps WHERE recipe_id = ${id}`;
-      for (let i = 0; i < body.steps.length; i++) {
-        const step = body.steps[i];
+      await Promise.all(body.steps.map((step, i) => {
         const burner = step.burner === 1 || step.burner === 2 ? step.burner : null;
-        await sql`
+        return sql`
           INSERT INTO recipe_steps (recipe_id, burner, action, duration_sec, description, sort_order)
           VALUES (${id}, ${burner}, ${step.action}, ${step.duration_sec}, ${step.description ?? ''}, ${i})
         `;
-      }
+      }));
     }
 
     return NextResponse.json({ ok: true });

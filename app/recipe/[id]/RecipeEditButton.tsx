@@ -4,6 +4,7 @@ import { useSession, signIn } from 'next-auth/react';
 import { X, Plus, Trash2, ChevronDown, Loader2, Check, GitFork } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { t, isEn } from '@/i18n';
+import { useApp } from '@/context/AppContext';
 import type { RecipeIngredient, RecipeStep } from '@/types';
 
 interface Props {
@@ -30,6 +31,7 @@ const BURNER_OPTIONS = () => [
 
 export function RecipeEditButton({ recipeId, initial }: Props) {
   const { data: session } = useSession();
+  const { dispatch: appDispatch } = useApp();
   const router = useRouter();
   const [open, setOpen] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -129,6 +131,7 @@ export function RecipeEditButton({ recipeId, initial }: Props) {
       });
       const data = await res.json() as { id?: string; error?: string };
       if (data.id) {
+        appDispatch({ type: 'TOGGLE_FAVORITE', payload: data.id });
         setDone(true);
         setNewId(data.id);
         setTimeout(() => {

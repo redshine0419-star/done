@@ -1,5 +1,6 @@
 'use client';
-import { createContext, useContext, useReducer, useEffect, type ReactNode } from 'react';
+import { createContext, useContext, useReducer, useEffect, useRef, type ReactNode } from 'react';
+import { useSession } from 'next-auth/react';
 import type { FridgeItem, TasteProfile, Recipe, CookSession, AdjustedIngredient } from '@/types';
 import { mockFridgeItems } from '@/data/mockFridge';
 import { loadFromLS, saveToLS, migrateFridgeItemsV1 } from '@/utils/storage';
@@ -26,7 +27,8 @@ type AppAction =
   | { type: 'RESUME_COOKING' }
   | { type: 'COMPLETE_COOKING' }
   | { type: 'RESET_COOKING' }
-  | { type: 'TOGGLE_FAVORITE'; payload: string };
+  | { type: 'TOGGLE_FAVORITE'; payload: string }
+  | { type: 'SET_FAVORITES'; payload: string[] };
 
 function burnerSteps(recipe: Recipe, burner: 1 | 2) {
   const allNull = recipe.steps.every(s => s.burner === null);
@@ -173,6 +175,9 @@ function reducer(state: AppState, action: AppAction): AppState {
       return { ...state, favoriteIds: exists ? state.favoriteIds.filter(f => f !== id) : [...state.favoriteIds, id] };
     }
 
+    case 'SET_FAVORITES':
+      return { ...state, favoriteIds: action.payload };
+
     default:
       return state;
   }
@@ -204,12 +209,25 @@ export const AppContext = createContext<AppContextValue | null>(null);
 
 export function AppProvider({ children }: { children: ReactNode }) {
   const [state, dispatch] = useReducer(reducer, undefined, initState);
+  const { data: session, status } = useSession();
+
+  // Track which LS key is currently active for favorites (user-scoped when logged in)
+  const favKeyRef = useRef<string>('fs_favorites');
+
+  useEffect(() => {
+    if (status === 'loading') return;
+    const newKey = session?.user?.id ? `fs_favorites_${session.user.id}` : 'fs_favorites';
+    if (newKey !== favKeyRef.current) {
+      favKeyRef.current = newKey;
+      dispatch({ type: 'SET_FAVORITES', payload: loadFromLS<string[]>(newKey, []) });
+    }
+  }, [status, session?.user?.id]);
 
   useEffect(() => { saveToLS('fs_fridge', state.fridgeItems); }, [state.fridgeItems]);
   useEffect(() => { saveToLS('fs_taste', state.tasteProfile); }, [state.tasteProfile]);
   useEffect(() => { saveToLS('fs_cook_recipe', state.activeCookRecipe); }, [state.activeCookRecipe]);
   useEffect(() => { saveToLS('fs_cook_session', state.cookSession); }, [state.cookSession]);
-  useEffect(() => { saveToLS('fs_favorites', state.favoriteIds); }, [state.favoriteIds]);
+  useEffect(() => { saveToLS(favKeyRef.current, state.favoriteIds); }, [state.favoriteIds]);
 
   return <AppContext.Provider value={{ state, dispatch }}>{children}</AppContext.Provider>;
 }

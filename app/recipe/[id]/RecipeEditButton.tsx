@@ -37,7 +37,8 @@ export function RecipeEditButton({ recipeId, initial }: Props) {
   const [error, setError] = useState('');
   const [newId, setNewId] = useState('');
 
-  const [title, setTitle] = useState(initial.title);
+  const defaultTitle = `${initial.title} (${isEn ? 'My Version' : '내 버전'})`;
+  const [title, setTitle] = useState(defaultTitle);
   const [thumbnail, setThumbnail] = useState(initial.thumbnail);
   const [story, setStory] = useState(initial.story);
   const [servings, setServings] = useState(String(initial.servings));
@@ -52,7 +53,7 @@ export function RecipeEditButton({ recipeId, initial }: Props) {
   );
 
   function resetForm() {
-    setTitle(initial.title);
+    setTitle(defaultTitle);
     setThumbnail(initial.thumbnail);
     setStory(initial.story);
     setServings(String(initial.servings));
@@ -93,6 +94,7 @@ export function RecipeEditButton({ recipeId, initial }: Props) {
 
   async function handleSave() {
     if (!title.trim()) { setError(isEn ? 'Please enter a title.' : '제목을 입력해주세요.'); return; }
+    if (title.trim() === initial.title.trim()) { setError(isEn ? 'Please change the title to make it your own.' : '제목을 변경해주세요. 원본과 같은 제목은 사용할 수 없습니다.'); return; }
     if (!session) { signIn('google'); return; }
 
     setSaving(true);

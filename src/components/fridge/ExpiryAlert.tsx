@@ -2,6 +2,7 @@
 import { AlertTriangle } from 'lucide-react';
 import type { FridgeItem } from '@/types';
 import { getDaysUntilExpiry } from '@/utils/expiry';
+import { t } from '@/i18n';
 
 interface Props { items: FridgeItem[]; }
 
@@ -17,7 +18,7 @@ export function ExpiryAlert({ items }: Props) {
     <div className="rounded-2xl p-4" style={{ background: 'var(--amber-light)', border: '1px solid #F4C97A' }}>
       <div className="flex items-center gap-2 mb-3">
         <AlertTriangle size={15} color="var(--amber)" strokeWidth={2.5} />
-        <p className="text-[13px] font-bold" style={{ color: 'var(--amber)' }}>유통기한 임박</p>
+        <p className="text-[13px] font-bold" style={{ color: 'var(--amber)' }}>{t.fridge.expiryWarning}</p>
       </div>
       <div className="flex flex-wrap gap-2">
         {urgent.map(item => (

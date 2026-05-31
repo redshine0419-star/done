@@ -2,6 +2,7 @@
 import { useState } from 'react';
 import { expireDateFromDays } from '@/utils/expiry';
 import type { FridgeItem } from '@/types';
+import { t } from '@/i18n';
 
 interface ExtractedItem {
   name: string;
@@ -47,9 +48,9 @@ export function OcrReviewModal({ items: initial, onConfirm, onClose }: Props) {
         <div className="relative w-full bg-white rounded-t-3xl p-6 text-center"
              style={{ paddingBottom: 'calc(1.5rem + env(safe-area-inset-bottom, 0px) + 60px)' }}>
           <p className="text-4xl mb-3">🔍</p>
-          <p className="font-bold text-gray-800">식재료를 찾지 못했어요</p>
-          <p className="text-sm text-gray-400 mt-1">영수증이나 식재료가 잘 보이는 사진을 다시 시도해 보세요.</p>
-          <button onClick={onClose} className="mt-4 w-full h-12 rounded-2xl border-2 border-gray-200 text-gray-600 font-semibold">닫기</button>
+          <p className="font-bold text-gray-800">{t.fridge.ocrNotFound}</p>
+          <p className="text-sm text-gray-400 mt-1">{t.fridge.ocrNotFoundHint}</p>
+          <button onClick={onClose} className="mt-4 w-full h-12 rounded-2xl border-2 border-gray-200 text-gray-600 font-semibold">{t.common.close}</button>
         </div>
       </div>
     );
@@ -62,8 +63,8 @@ export function OcrReviewModal({ items: initial, onConfirm, onClose }: Props) {
         <div className="w-10 h-1 bg-gray-300 rounded-full mx-auto mt-3 mb-1 shrink-0" />
 
         <div className="px-5 py-3 border-b border-gray-100 shrink-0">
-          <h2 className="font-black text-gray-900 text-lg">식재료 인식 결과</h2>
-          <p className="text-xs text-gray-400 mt-0.5">수정 후 냉장고에 추가하세요</p>
+          <h2 className="font-black text-gray-900 text-lg">{t.fridge.ocrReviewTitle}</h2>
+          <p className="text-xs text-gray-400 mt-0.5">{t.fridge.ocrReviewHint}</p>
         </div>
 
         <div className="flex-1 overflow-y-auto px-5 py-3 space-y-2">
@@ -92,10 +93,10 @@ export function OcrReviewModal({ items: initial, onConfirm, onClose }: Props) {
                 value={item.expireDays}
                 min="0"
                 onChange={e => update(idx, 'expireDays', e.target.value)}
-                title="유통기한(일)"
+                title={t.fridge.ocrExpiryLabel}
                 className="w-10 h-10 px-1 rounded-lg border border-gray-200 text-xs text-center bg-white"
               />
-              <span className="text-xs text-gray-400 shrink-0">일</span>
+              <span className="text-xs text-gray-400 shrink-0">{t.fridge.expiryDays}</span>
               <button
                 onClick={() => remove(idx)}
                 className="w-7 h-7 flex items-center justify-center rounded-full text-gray-300 hover:text-red-400 hover:bg-red-50 shrink-0"
@@ -112,13 +113,13 @@ export function OcrReviewModal({ items: initial, onConfirm, onClose }: Props) {
             onClick={handleConfirm}
             className="w-full h-14 rounded-2xl bg-[#FF6B35] text-white font-bold text-base touch-manipulation"
           >
-            🧊 {items.length}개 냉장고에 추가
+            {t.fridge.ocrAddItems.replace('{count}', String(items.length))}
           </button>
           <button
             onClick={onClose}
             className="w-full h-11 rounded-2xl border-2 border-gray-200 text-gray-500 text-sm font-semibold touch-manipulation"
           >
-            취소
+            {t.common.cancel}
           </button>
         </div>
       </div>

@@ -4,6 +4,8 @@ import { ScreenWrapper } from '@/components/layout/ScreenWrapper';
 import { BlogPostCard } from '@/components/blog/BlogPostCard';
 import { useApp } from '@/context/AppContext';
 import { mockRecipes } from '@/data/mockRecipes';
+import { mockRecipesEn } from '@/data/mockRecipesEn';
+import { t, isEn } from '@/i18n';
 import type { Recipe } from '@/types';
 
 type Filter = 'all' | 'single' | 'combo';
@@ -13,7 +15,9 @@ export function BlogScreen() {
   const [query, setQuery]   = useState('');
   const [filter, setFilter] = useState<Filter>('all');
 
-  const filtered = mockRecipes
+  const recipes = isEn ? mockRecipesEn : mockRecipes;
+
+  const filtered = recipes
     .filter(r => filter === 'all' || (filter === 'combo' ? r.isCombo : !r.isCombo))
     .filter(r => r.title.includes(query) || r.story.includes(query));
 
@@ -22,20 +26,20 @@ export function BlogScreen() {
   }
 
   const filterBtns: { value: Filter; label: string }[] = [
-    { value: 'all',    label: '전체' },
-    { value: 'single', label: '1구 단품' },
-    { value: 'combo',  label: '2구 코스 ⚡' },
+    { value: 'all',    label: t.blog.filterAll },
+    { value: 'single', label: t.blog.filterSingle },
+    { value: 'combo',  label: t.blog.filterCombo },
   ];
 
   return (
-    <ScreenWrapper title="🍳 오늘의 레시피" subtitle="냉장고 재료로 바로 만들어요">
+    <ScreenWrapper title={t.blog.screenTitle} subtitle={t.blog.screenSubtitle}>
       <div className="space-y-4">
         <div className="relative">
           <span className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400">🔍</span>
           <input
             value={query}
             onChange={e => setQuery(e.target.value)}
-            placeholder="레시피 검색"
+            placeholder={t.recipe.searchPlaceholder}
             className="w-full h-12 pl-10 pr-4 rounded-2xl border border-gray-200 bg-white text-sm"
           />
         </div>
@@ -69,12 +73,12 @@ export function BlogScreen() {
         {filtered.length === 0 && (
           <div className="text-center py-12 text-gray-400">
             <p className="text-4xl mb-2">📭</p>
-            <p className="text-sm">검색 결과가 없어요</p>
+            <p className="text-sm">{t.blog.noResults}</p>
             <button
               onClick={() => { setQuery(''); setFilter('all'); }}
               className="mt-3 text-xs text-[#FF6B35] font-semibold"
             >
-              필터 초기화
+              {t.recipe.resetFilter}
             </button>
           </div>
         )}

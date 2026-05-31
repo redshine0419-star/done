@@ -1,6 +1,7 @@
 'use client';
 import { useState } from 'react';
 import { requestWakeLock, releaseWakeLock } from '@/utils/wakeLock';
+import { t } from '@/i18n';
 
 export function WakeLockToggle() {
   const [active, setActive] = useState(false);
@@ -23,7 +24,7 @@ export function WakeLockToggle() {
       }`}
     >
       <span>{active ? '💡' : '🌙'}</span>
-      <span>{active ? '화면 켜짐 유지 중' : '화면 자동 꺼짐'}</span>
+      <span>{active ? t.cook.screenOn : t.cook.screenOff}</span>
     </button>
   );
 }

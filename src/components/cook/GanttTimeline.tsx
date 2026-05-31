@@ -1,5 +1,6 @@
 'use client';
 import type { Recipe } from '@/types';
+import { t } from '@/i18n';
 
 interface Props {
   recipe: Recipe;
@@ -57,15 +58,15 @@ export function GanttTimeline({ recipe, b1StepIndex, b2StepIndex }: Props) {
 
   return (
     <div className="bg-white rounded-2xl p-4 border border-gray-100 shadow-sm">
-      <p className="text-xs font-bold text-gray-600 mb-3">간트 차트 (조리 타임라인)</p>
+      <p className="text-xs font-bold text-gray-600 mb-3">{t.cook.ganttTitle}</p>
       <div className="space-y-2">
-        {renderRow(b1, b1StepIndex, 'bg-[#FF6B35]', '1구')}
-        {b2.length > 0 && renderRow(b2, b2StepIndex, 'bg-blue-500', '2구')}
+        {renderRow(b1, b1StepIndex, 'bg-[#FF6B35]', t.cook.b1Label)}
+        {b2.length > 0 && renderRow(b2, b2StepIndex, 'bg-blue-500', t.cook.b2Label)}
       </div>
       <div className="flex justify-between text-[9px] text-gray-400 mt-1.5 px-10">
-        <span>0분</span>
-        <span>{Math.round(total / 60 / 2)}분</span>
-        <span>{Math.round(total / 60)}분</span>
+        <span>0</span>
+        <span>{Math.round(total / 60 / 2)}{t.recipe.minutes}</span>
+        <span>{Math.round(total / 60)}{t.recipe.minutes}</span>
       </div>
     </div>
   );

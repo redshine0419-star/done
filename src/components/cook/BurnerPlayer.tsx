@@ -2,6 +2,7 @@
 import { ChevronRight } from 'lucide-react';
 import type { RecipeStep } from '@/types';
 import { StepProgressBar } from './StepProgressBar';
+import { t } from '@/i18n';
 
 interface Props {
   burner: 1 | 2;
@@ -25,7 +26,7 @@ export function BurnerPlayer({ burner, steps, currentStepIndex, stepStartMs, pau
   const isB1 = burner === 1;
   const accentColor = isB1 ? 'var(--brand)' : '#2563EB';
   const accentBg   = isB1 ? 'var(--brand-light)' : '#EBF2FF';
-  const label      = isB1 ? '1구 화구' : '2구 화구';
+  const label      = isB1 ? t.cook.burner1Label : t.cook.burner2Label;
 
   const currentStep = steps[currentStepIndex];
   const elapsed = isRunning
@@ -43,7 +44,7 @@ export function BurnerPlayer({ burner, steps, currentStepIndex, stepStartMs, pau
         {isComplete && (
           <span className="text-[12px] font-bold px-2.5 py-0.5 rounded-full text-white"
                 style={{ background: accentColor }}>
-            완성
+            {t.cook.done}
           </span>
         )}
       </div>
@@ -56,7 +57,7 @@ export function BurnerPlayer({ burner, steps, currentStepIndex, stepStartMs, pau
 
       {isComplete ? (
         <div className="px-4 py-6 text-center">
-          <p className="font-bold text-[15px]" style={{ color: 'var(--text-2)' }}>조리 완료!</p>
+          <p className="font-bold text-[15px]" style={{ color: 'var(--text-2)' }}>{t.cook.cookingDone}</p>
         </div>
       ) : currentStep ? (
         <div className="px-4 pb-4 pt-3 space-y-3">
@@ -96,7 +97,7 @@ export function BurnerPlayer({ burner, steps, currentStepIndex, stepStartMs, pau
               className="flex-1 h-14 rounded-2xl font-bold text-[14px] touch-manipulation flex items-center justify-center gap-2"
               style={{ background: accentColor, color: 'white' }}
             >
-              다음 단계
+              {t.cook.nextStep}
               <ChevronRight size={16} strokeWidth={2.5} />
             </button>
           </div>

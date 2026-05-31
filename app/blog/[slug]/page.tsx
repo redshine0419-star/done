@@ -4,6 +4,7 @@ import { notFound } from 'next/navigation';
 import { mockBlogPosts } from '@/data/mockBlogPosts';
 import type { BlogPost } from '@/types';
 import { StartCookingButton } from './StartCookingButton';
+import { t, isEn } from '@/i18n';
 
 type Params = { slug: string };
 
@@ -54,9 +55,10 @@ export async function generateMetadata(
 ): Promise<Metadata> {
   const { slug } = await params;
   const post = await getPost(slug);
-  if (!post) return { title: '포스트를 찾을 수 없어요' };
+  const appName = isEn ? 'FlavorSync' : '플레이버 싱크';
+  if (!post) return { title: isEn ? 'Post not found' : '포스트를 찾을 수 없어요' };
   return {
-    title: `${post.title} — 플레이버 싱크`,
+    title: `${post.title} — ${appName}`,
     description: post.summary,
     openGraph: {
       title: post.title,
@@ -115,16 +117,19 @@ export default async function BlogPostPage({ params }: { params: Promise<Params>
   const post = await getPost(slug);
   if (!post) notFound();
 
+  const siteUrl = isEn ? 'https://en.flavorsync.me' : 'https://flavorsync.me';
+  const appName = isEn ? 'FlavorSync' : '플레이버 싱크';
+
   const articleSchema = {
     '@context': 'https://schema.org',
     '@type': 'Article',
     headline: post.title,
     description: post.summary,
     author: { '@type': 'Person', name: post.author },
-    publisher: { '@type': 'Organization', name: '플레이버 싱크', url: 'https://flavorsync.me' },
+    publisher: { '@type': 'Organization', name: appName, url: siteUrl },
     datePublished: post.published_at,
     keywords: post.tags.join(', '),
-    url: `https://flavorsync.me/blog/${post.id}`,
+    url: `${siteUrl}/blog/${post.id}`,
   };
 
   return (
@@ -136,7 +141,7 @@ export default async function BlogPostPage({ params }: { params: Promise<Params>
       {/* Back header */}
       <header className="sticky top-0 z-40 bg-white border-b border-gray-100 px-4 py-3 flex items-center gap-3">
         <Link href="/blog" className="text-gray-500 p-1 -ml-1 rounded-lg hover:bg-gray-100">
-          ← 블로그
+          {t.blog.backBtn}
         </Link>
         <span className="text-xs font-bold text-orange-500 bg-orange-50 px-2 py-0.5 rounded-full">
           {post.category}
@@ -147,7 +152,9 @@ export default async function BlogPostPage({ params }: { params: Promise<Params>
         {/* Thumbnail + meta */}
         <div className="text-center py-6 bg-gradient-to-br from-orange-50 to-amber-50 rounded-2xl">
           <span className="text-6xl">{post.thumbnail}</span>
-          <p className="text-xs text-gray-400 mt-3">{post.readTime}분 읽기</p>
+          <p className="text-xs text-gray-400 mt-3">
+            {isEn ? `${post.readTime} ${t.blog.readTime}` : `${post.readTime}${t.blog.readTime}`}
+          </p>
         </div>
 
         <h1 className="text-xl font-black text-gray-900 leading-tight">{post.title}</h1>

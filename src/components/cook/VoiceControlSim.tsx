@@ -2,6 +2,7 @@
 import { useState } from 'react';
 import type { VoiceCommand } from '@/types';
 import { simulateVoiceRecognition } from '@/utils/speechSim';
+import { t } from '@/i18n';
 
 interface Props {
   onCommand: (cmd: VoiceCommand) => void;
@@ -14,7 +15,7 @@ export function VoiceControlSim({ onCommand }: Props) {
   function handleMic() {
     if (listening) return;
     setListening(true);
-    setTranscript('듣는 중...');
+    setTranscript(t.cook.voiceListening);
     simulateVoiceRecognition(
       (text, cmd) => {
         setTranscript(`"${text}"`);
@@ -35,8 +36,8 @@ export function VoiceControlSim({ onCommand }: Props) {
         🎤
       </button>
       <div className="flex-1">
-        <p className="text-xs font-bold text-gray-600">음성 제어</p>
-        <p className="text-xs text-gray-400 mt-0.5">{transcript || '"다음", "멈춰", "완료" 발화 가능'}</p>
+        <p className="text-xs font-bold text-gray-600">{t.cook.voiceControl}</p>
+        <p className="text-xs text-gray-400 mt-0.5">{transcript || t.cook.voiceHint}</p>
       </div>
     </div>
   );

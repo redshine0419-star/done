@@ -5,6 +5,7 @@ import { useApp } from '@/context/AppContext';
 import { OcrReviewModal } from '@/components/fridge/OcrReviewModal';
 import { expireDateFromDays } from '@/utils/expiry';
 import type { FridgeItem } from '@/types';
+import { t } from '@/i18n';
 
 type Stage = 'idle' | 'loading' | 'review' | 'error';
 
@@ -57,7 +58,7 @@ export function OcrBanner() {
         body: JSON.stringify({ image: base64, mimeType }),
       });
       const data = await res.json() as { ingredients?: ExtractedItem[]; error?: string };
-      if (!res.ok || data.error) throw new Error(data.error ?? '인식 실패');
+      if (!res.ok || data.error) throw new Error(data.error ?? t.fridge.ocrFailed);
       setExtracted(data.ingredients ?? []);
       setStage('review');
     } catch (err) {
@@ -101,12 +102,10 @@ export function OcrBanner() {
           </div>
           <div className="flex-1">
             <p className="text-white font-bold text-[15px] leading-snug">
-              {stage === 'loading' ? 'AI가 식재료를 인식 중...' : '영수증 스캔으로 자동 등록'}
+              {stage === 'loading' ? t.fridge.ocrLoading : t.fridge.ocrScan}
             </p>
             <p className="text-white/70 text-[12px] mt-0.5">
-              {stage === 'loading'
-                ? 'Gemini AI가 이미지를 분석하고 있어요'
-                : '마트 영수증 · 냉장고 사진 → 자동 인식'}
+              {stage === 'loading' ? t.fridge.ocrLoadingHint : t.fridge.ocrIdleHint}
             </p>
           </div>
           {stage !== 'loading' && (
@@ -119,8 +118,8 @@ export function OcrBanner() {
         <div className="rounded-2xl px-4 py-3 flex items-start gap-3"
              style={{ background: 'var(--red-light)', border: '1px solid #F4A9A0' }}>
           <div className="flex-1 min-w-0">
-            <p className="text-[13px] font-bold" style={{ color: 'var(--red)' }}>인식 실패: {errMsg}</p>
-            <p className="text-[12px] mt-0.5" style={{ color: 'var(--red)' }}>식재료가 잘 보이는 사진으로 다시 시도해 보세요.</p>
+            <p className="text-[13px] font-bold" style={{ color: 'var(--red)' }}>{t.fridge.ocrFailed}: {errMsg}</p>
+            <p className="text-[12px] mt-0.5" style={{ color: 'var(--red)' }}>{t.fridge.ocrFailedHint}</p>
           </div>
           <button onClick={() => setStage('idle')} className="shrink-0 touch-manipulation">
             <X size={16} color="var(--red)" />

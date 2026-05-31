@@ -2,13 +2,16 @@
 import { useRouter } from 'next/navigation';
 import { useApp } from '@/context/AppContext';
 import { mockRecipes } from '@/data/mockRecipes';
+import { mockRecipesEn } from '@/data/mockRecipesEn';
+import { t, isEn } from '@/i18n';
 
 export function StartCookingButton({ recipeId }: { recipeId: string }) {
   const { dispatch } = useApp();
   const router = useRouter();
 
   function handleStart() {
-    const recipe = mockRecipes.find(r => r.id === recipeId);
+    const base = isEn ? mockRecipesEn : mockRecipes;
+    const recipe = base.find(r => r.id === recipeId);
     if (recipe) {
       dispatch({ type: 'START_COOKING', payload: recipe });
       router.push('/cook');
@@ -20,7 +23,7 @@ export function StartCookingButton({ recipeId }: { recipeId: string }) {
       onClick={handleStart}
       className="w-full h-14 rounded-2xl bg-[#FF6B35] text-white font-bold text-base touch-manipulation"
     >
-      🍳 관련 레시피로 바로 조리 →
+      {t.blog.startCooking}
     </button>
   );
 }

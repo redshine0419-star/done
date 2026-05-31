@@ -2,6 +2,7 @@
 import { useState } from 'react';
 import type { Recipe, FridgeItem, TasteProfile } from '@/types';
 import { InventoryChecklist } from './InventoryChecklist';
+import { t } from '@/i18n';
 
 interface Props {
   recipe: Recipe;
@@ -25,9 +26,9 @@ export function BlogPostCard({ recipe, fridgeItems, tasteProfile, onStart }: Pro
         <div className="flex-1">
           <div className="flex items-center gap-2 mb-1">
             {recipe.isCombo && (
-              <span className="px-2 py-0.5 rounded-full bg-purple-100 text-purple-700 text-xs font-bold">2구 코스</span>
+              <span className="px-2 py-0.5 rounded-full bg-purple-100 text-purple-700 text-xs font-bold">{t.blog.comboTag}</span>
             )}
-            <span className="px-2 py-0.5 rounded-full bg-orange-100 text-orange-700 text-xs font-medium">~{mins}분</span>
+            <span className="px-2 py-0.5 rounded-full bg-orange-100 text-orange-700 text-xs font-medium">~{mins}{t.recipe.minutes}</span>
           </div>
           <h3 className="font-bold text-gray-900 text-lg">{recipe.title}</h3>
           <p className="text-gray-500 text-sm mt-1 line-clamp-2">{recipe.story}</p>
@@ -42,7 +43,7 @@ export function BlogPostCard({ recipe, fridgeItems, tasteProfile, onStart }: Pro
             onClick={() => onStart(recipe)}
             className="w-full h-14 rounded-2xl bg-[#FF6B35] text-white font-bold text-base touch-manipulation shadow-md"
           >
-            {recipe.isCombo ? '🍳 2구 코스 조리 시작' : '🔥 1구 단독 조리 시작'}
+            {recipe.isCombo ? t.blog.startCombo : t.blog.startSingle}
           </button>
         </div>
       )}

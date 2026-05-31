@@ -1,5 +1,6 @@
 'use client';
 import type { AdjustedIngredient } from '@/types';
+import { t, isEn } from '@/i18n';
 
 interface Props {
   recipeName: string;
@@ -9,11 +10,14 @@ interface Props {
 }
 
 function shareRecipe(recipeName: string) {
-  const text = `플레이버 싱크로 "${recipeName}" 완성! 🍳\n냉장고 재료로 오늘 저녁 해결 → https://flavorsync.me/recipe`;
+  const siteUrl = isEn ? 'https://en.flavorsync.me' : 'https://flavorsync.me';
+  const text = isEn
+    ? `Just cooked "${recipeName}" with FlavorSync! 🍳\nMade from fridge ingredients → ${siteUrl}/recipe`
+    : `플레이버 싱크로 "${recipeName}" 완성! 🍳\n냉장고 재료로 오늘 저녁 해결 → ${siteUrl}/recipe`;
   if (navigator.share) {
     navigator.share({ text }).catch(() => {});
   } else {
-    navigator.clipboard?.writeText(text).then(() => alert('공유 텍스트가 복사됐어요!')).catch(() => {});
+    navigator.clipboard?.writeText(text).then(() => alert(t.cook.shareCopied)).catch(() => {});
   }
 }
 
@@ -25,8 +29,8 @@ export function CompletionModal({ recipeName, adjustedIngredients, onConfirm, on
            style={{ paddingBottom: 'calc(1.5rem + env(safe-area-inset-bottom, 16px))' }}>
         <div className="text-center">
           <p className="text-5xl mb-2">🎉</p>
-          <h2 className="text-xl font-black text-gray-900">조리 완료!</h2>
-          <p className="text-sm text-gray-500 mt-1">{recipeName} 완성</p>
+          <h2 className="text-xl font-black text-gray-900">{t.cook.completionTitle}</h2>
+          <p className="text-sm text-gray-500 mt-1">{recipeName}</p>
         </div>
 
         {/* Share button */}
@@ -35,11 +39,11 @@ export function CompletionModal({ recipeName, adjustedIngredients, onConfirm, on
           className="w-full h-11 rounded-2xl flex items-center justify-center gap-2 text-[14px] font-bold touch-manipulation"
           style={{ background: '#FEF0E8', color: 'var(--brand)', border: '1px solid rgba(201,75,42,0.2)' }}
         >
-          📤 완성한 요리 공유하기
+          {t.cook.shareBtn}
         </button>
 
         <div>
-          <p className="text-[12px] font-bold mb-2" style={{ color: 'var(--text-3)' }}>사용된 재료 차감</p>
+          <p className="text-[12px] font-bold mb-2" style={{ color: 'var(--text-3)' }}>{t.cook.ingredientDeduction}</p>
           <div className="bg-gray-50 rounded-2xl p-4 space-y-2 max-h-40 overflow-y-auto">
             {adjustedIngredients.map(ing => (
               <div key={ing.ingredient_id} className="flex items-center justify-between text-sm">
@@ -55,13 +59,13 @@ export function CompletionModal({ recipeName, adjustedIngredients, onConfirm, on
             onClick={onClose}
             className="flex-1 h-14 rounded-2xl border-2 border-gray-200 text-gray-600 font-bold text-base touch-manipulation"
           >
-            나중에
+            {t.cook.later}
           </button>
           <button
             onClick={onConfirm}
             className="flex-1 h-14 rounded-2xl bg-[#FF6B35] text-white font-bold text-base touch-manipulation shadow-md"
           >
-            차감 확인
+            {t.cook.confirmDeduct}
           </button>
         </div>
       </div>

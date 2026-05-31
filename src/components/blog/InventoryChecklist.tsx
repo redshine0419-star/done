@@ -2,6 +2,7 @@
 import type { Recipe, FridgeItem, TasteProfile } from '@/types';
 import { adjustedAmount, dominantTasteLevel } from '@/utils/tasteMatrix';
 import { ingredientMatches } from '@/utils/ingredientMatch';
+import { t, isEn } from '@/i18n';
 
 interface Props {
   recipe: Recipe;
@@ -12,7 +13,7 @@ interface Props {
 export function InventoryChecklist({ recipe, fridgeItems, tasteProfile }: Props) {
   return (
     <div className="bg-gray-50 rounded-2xl p-4 space-y-2">
-      <p className="text-sm font-bold text-gray-700 mb-3">재료 보유 현황</p>
+      <p className="text-sm font-bold text-gray-700 mb-3">{t.blog.inventory}</p>
       {recipe.ingredients.map(ing => {
         const fridge = fridgeItems.find(f => ingredientMatches(f, ing));
         const level = dominantTasteLevel(ing.name, tasteProfile);
@@ -27,7 +28,9 @@ export function InventoryChecklist({ recipe, fridgeItems, tasteProfile }: Props)
             </span>
             <span className="flex-1 text-sm text-gray-700">{ing.name}</span>
             <span className={`text-xs font-semibold ${ok ? 'text-green-600' : 'text-red-500'}`}>
-              필요 {needed}{ing.unit} / 보유 {have}{ing.unit}
+              {isEn
+                ? `Need: ${needed}${ing.unit} / Have: ${have}${ing.unit}`
+                : `필요 ${needed}${ing.unit} / 보유 ${have}${ing.unit}`}
             </span>
           </div>
         );

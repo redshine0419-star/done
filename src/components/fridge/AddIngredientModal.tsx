@@ -3,6 +3,7 @@ import { useState, useEffect } from 'react';
 import type { FridgeItem } from '@/types';
 import { UNITS } from '@/constants/taste';
 import { expireDateFromDays } from '@/utils/expiry';
+import { t, isEn } from '@/i18n';
 
 interface Props {
   isOpen: boolean;
@@ -12,7 +13,7 @@ interface Props {
   onEdit?: (item: FridgeItem) => void;
 }
 
-const QUICK_ITEMS = [
+const QUICK_ITEMS_KO = [
   { name: '감자',   icon: '🥔', unit: '개' },
   { name: '당근',   icon: '🥕', unit: '개' },
   { name: '애호박', icon: '🫑', unit: '개' },
@@ -20,6 +21,17 @@ const QUICK_ITEMS = [
   { name: '고기',   icon: '🥩', unit: 'g' },
   { name: '두부',   icon: '⬜', unit: '개' },
 ];
+
+const QUICK_ITEMS_EN = [
+  { name: 'Potato',   icon: '🥔', unit: 'pcs' },
+  { name: 'Carrot',   icon: '🥕', unit: 'pcs' },
+  { name: 'Zucchini', icon: '🫑', unit: 'pcs' },
+  { name: 'Mushroom', icon: '🍄', unit: 'g' },
+  { name: 'Meat',     icon: '🥩', unit: 'g' },
+  { name: 'Tofu',     icon: '⬜', unit: 'block' },
+];
+
+const QUICK_ITEMS = isEn ? QUICK_ITEMS_EN : QUICK_ITEMS_KO;
 
 export function AddIngredientModal({ isOpen, onClose, onAdd, editItem, onEdit }: Props) {
   const isEditMode = Boolean(editItem);
@@ -37,7 +49,6 @@ export function AddIngredientModal({ isOpen, onClose, onAdd, editItem, onEdit }:
       setIcon(editItem.icon);
       setAmount(String(editItem.amount));
       setUnit(editItem.unit);
-      // expire_date → 남은 일수
       const diff = Math.ceil(
         (new Date(editItem.expire_date).getTime() - new Date().setHours(0, 0, 0, 0)) / 86_400_000
       );
@@ -52,11 +63,11 @@ export function AddIngredientModal({ isOpen, onClose, onAdd, editItem, onEdit }:
 
   function validate(): boolean {
     const errs: Record<string, string> = {};
-    if (!name.trim()) errs.name = '이름을 입력하세요';
+    if (!name.trim()) errs.name = t.fridge.errName;
     const amt = parseFloat(amount);
-    if (!amount || isNaN(amt) || amt <= 0) errs.amount = '0보다 큰 수량을 입력하세요';
+    if (!amount || isNaN(amt) || amt <= 0) errs.amount = t.fridge.errAmount;
     const days = parseInt(expireDays);
-    if (!expireDays || isNaN(days) || days < 0) errs.expire = '0 이상의 숫자를 입력하세요';
+    if (!expireDays || isNaN(days) || days < 0) errs.expire = t.fridge.errExpiry;
     setErrors(errs);
     return Object.keys(errs).length === 0;
   }
@@ -92,7 +103,7 @@ export function AddIngredientModal({ isOpen, onClose, onAdd, editItem, onEdit }:
            style={{ paddingBottom: 'calc(1.5rem + env(safe-area-inset-bottom, 0px) + 60px)' }}>
         <div className="w-10 h-1 bg-gray-300 rounded-full mx-auto -mt-2 mb-3" />
         <h2 className="text-lg font-bold text-gray-900">
-          {isEditMode ? '식재료 수정' : '식재료 추가'}
+          {isEditMode ? t.fridge.addTitleEdit : t.fridge.addTitleAdd}
         </h2>
 
         {!isEditMode && (
@@ -119,7 +130,7 @@ export function AddIngredientModal({ isOpen, onClose, onAdd, editItem, onEdit }:
             <input
               value={name}
               onChange={e => { setName(e.target.value); setErrors(p => ({ ...p, name: '' })); }}
-              placeholder="식재료 이름"
+              placeholder={t.fridge.namePlaceholder}
               className={`w-full h-14 px-4 rounded-xl border text-base ${errors.name ? 'border-red-400 bg-red-50' : 'border-gray-200'}`}
             />
             {errors.name && <p className="text-xs text-red-500 mt-1 ml-1">{errors.name}</p>}
@@ -134,7 +145,7 @@ export function AddIngredientModal({ isOpen, onClose, onAdd, editItem, onEdit }:
               min="0.1"
               step="0.1"
               onChange={e => { setAmount(e.target.value); setErrors(p => ({ ...p, amount: '' })); }}
-              placeholder="수량"
+              placeholder={t.fridge.amountPlaceholder}
               className={`w-full h-14 px-4 rounded-xl border text-base ${errors.amount ? 'border-red-400 bg-red-50' : 'border-gray-200'}`}
             />
             {errors.amount && <p className="text-xs text-red-500 mt-1 ml-1">{errors.amount}</p>}
@@ -155,7 +166,7 @@ export function AddIngredientModal({ isOpen, onClose, onAdd, editItem, onEdit }:
         </div>
 
         <div className="flex items-center gap-3">
-          <label className="text-sm text-gray-600 shrink-0">유통기한</label>
+          <label className="text-sm text-gray-600 shrink-0">{t.fridge.expiryLabel}</label>
           <div className="flex-1">
             <input
               type="number"
@@ -166,14 +177,14 @@ export function AddIngredientModal({ isOpen, onClose, onAdd, editItem, onEdit }:
             />
             {errors.expire && <p className="text-xs text-red-500 mt-1 ml-1">{errors.expire}</p>}
           </div>
-          <span className="text-sm text-gray-500">일 후 만료</span>
+          <span className="text-sm text-gray-500">{t.fridge.expiryDaysSuffix}</span>
         </div>
 
         <button
           onClick={handleSubmit}
           className="w-full h-14 rounded-2xl bg-[#FF6B35] text-white font-bold text-lg touch-manipulation"
         >
-          {isEditMode ? '수정 완료' : '냉장고에 추가'}
+          {isEditMode ? t.fridge.saveEdit : t.fridge.saveAdd}
         </button>
       </div>
     </div>

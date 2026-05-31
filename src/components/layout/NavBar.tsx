@@ -2,12 +2,13 @@
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { Refrigerator, UtensilsCrossed, BookOpen } from 'lucide-react';
+import { t } from '@/i18n';
 
 const NAV = [
-  { path: '/fridge',  label: '냉장고', Icon: Refrigerator },
-  { path: '/recipe',  label: '레시피', Icon: UtensilsCrossed },
-  { path: '/blog',    label: '블로그', Icon: BookOpen },
-] as const;
+  { path: '/fridge',  label: t.nav.fridge, Icon: Refrigerator },
+  { path: '/recipe',  label: t.nav.recipe, Icon: UtensilsCrossed },
+  { path: '/blog',    label: t.nav.blog, Icon: BookOpen },
+];
 
 export function NavBar() {
   const pathname = usePathname();
@@ -56,9 +57,9 @@ export function NavBar() {
       >
         <div className="mb-8 px-1">
           <p className="text-[17px] font-black tracking-tight" style={{ color: 'var(--brand)' }}>
-            플레이버 싱크
+            {t.nav.appName}
           </p>
-          <p className="text-[11px] mt-0.5" style={{ color: 'var(--text-3)' }}>AI 스마트 레시피</p>
+          <p className="text-[11px] mt-0.5" style={{ color: 'var(--text-3)' }}>{t.nav.appSubtitle}</p>
         </div>
 
         <nav className="space-y-1 flex-1">
@@ -84,7 +85,7 @@ export function NavBar() {
 
         <div className="px-1 pt-4 border-t" style={{ borderColor: 'var(--border)' }}>
           <p className="text-[11px]" style={{ color: 'var(--text-3)' }}>
-            © 2026 플레이버 싱크
+            {t.nav.copyright}
           </p>
         </div>
       </aside>

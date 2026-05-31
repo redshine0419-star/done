@@ -3,6 +3,7 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { ArrowLeft, PlayCircle, Loader2, Check, AlertTriangle, RefreshCw } from 'lucide-react';
 import Link from 'next/link';
+import { t, isEn } from '@/i18n';
 import type { RecipeIngredient, RecipeStep } from '@/types';
 
 interface AnalyzedRecipe {
@@ -65,7 +66,7 @@ export default function RecipeSubmitPage() {
     if (!trimmed) return;
     const videoId = extractVideoId(trimmed);
     if (!videoId) {
-      setError('유효한 유튜브 URL을 입력해주세요.');
+      setError(t.submit.invalidUrl);
       return;
     }
 
@@ -109,7 +110,7 @@ export default function RecipeSubmitPage() {
       });
       const data = await safeJson<{ recipe?: AnalyzedRecipe; error?: string; _source?: 'transcript' | 'description' | 'title_only' }>(res);
       if (!data || !data.recipe) {
-        const errMsg = data?.error ?? `분석 중 오류가 발생했습니다 (상태 코드: ${res.status}). 잠시 후 다시 시도해 주세요.`;
+        const errMsg = data?.error ?? t.submit.analyzeError.replace('{status}', String(res.status));
         setError(errMsg);
         return;
       }
@@ -156,7 +157,7 @@ export default function RecipeSubmitPage() {
         if (data.ok) {
           setDone({ id: updateTargetId, mode: 'update' });
         } else {
-          setError(data.error ?? '수정에 실패했습니다.');
+          setError(data.error ?? (isEn ? 'Update failed.' : '수정에 실패했습니다.'));
         }
       } else {
         res = await fetch('/api/recipes', {
@@ -168,10 +169,10 @@ export default function RecipeSubmitPage() {
         if (data.id) {
           setDone({ id: data.id, mode: 'new' });
         } else if (data.existing_id) {
-          setError('이미 등록된 영상입니다. 업데이트 모드로 다시 시도해주세요.');
+          setError(isEn ? 'This video is already registered. Try update mode.' : '이미 등록된 영상입니다. 업데이트 모드로 다시 시도해주세요.');
           setUpdateTargetId(data.existing_id);
         } else {
-          setError(data.error ?? '등록에 실패했습니다.');
+          setError(data.error ?? (isEn ? 'Submission failed.' : '등록에 실패했습니다.'));
         }
       }
     } catch (e) {
@@ -190,12 +191,10 @@ export default function RecipeSubmitPage() {
           <Check size={32} color="var(--green)" strokeWidth={2.5} />
         </div>
         <h1 className="text-xl font-black mb-2" style={{ color: 'var(--text-1)' }}>
-          {done.mode === 'update' ? '레시피 업데이트 완료!' : '레시피 등록 완료!'}
+          {done.mode === 'update' ? t.submit.successUpdateTitle : t.submit.successTitle}
         </h1>
         <p className="text-sm leading-relaxed mb-6" style={{ color: 'var(--text-2)' }}>
-          {done.mode === 'update'
-            ? '레시피가 바로 업데이트되었습니다.'
-            : '레시피가 바로 공개되었습니다. 모든 사용자가 볼 수 있습니다.'}
+          {done.mode === 'update' ? t.submit.successUpdateBody : t.submit.successBody}
         </p>
         <div className="w-full space-y-3">
           <button
@@ -203,14 +202,14 @@ export default function RecipeSubmitPage() {
             className="w-full h-12 rounded-2xl font-bold text-white touch-manipulation"
             style={{ background: 'var(--brand)' }}
           >
-            레시피 보러가기
+            {t.submit.viewRecipe}
           </button>
           <button
             onClick={() => router.push('/recipe')}
             className="w-full h-12 rounded-2xl font-bold touch-manipulation"
             style={{ background: 'var(--surface)', color: 'var(--text-2)', border: '1px solid var(--border)' }}
           >
-            레시피 목록으로
+            {t.submit.backToList}
           </button>
         </div>
       </div>
@@ -227,7 +226,7 @@ export default function RecipeSubmitPage() {
           <ArrowLeft size={18} color="var(--text-2)" strokeWidth={2} />
         </Link>
         <span className="font-semibold text-[15px]" style={{ color: 'var(--text-1)' }}>
-          {mode === 'update' && updateTargetId ? '레시피 업데이트' : '레시피 추가'}
+          {mode === 'update' && updateTargetId ? t.submit.updateTitle : t.submit.pageTitle}
         </span>
       </header>
 
@@ -237,10 +236,10 @@ export default function RecipeSubmitPage() {
              style={{ background: 'var(--surface)', border: '1px solid var(--border)' }}>
           <div className="flex items-center gap-2">
             <PlayCircle size={18} color="#DC2626" />
-            <p className="font-bold text-[15px]" style={{ color: 'var(--text-1)' }}>유튜브 영상으로 레시피 추가</p>
+            <p className="font-bold text-[15px]" style={{ color: 'var(--text-1)' }}>{t.submit.inputLabel}</p>
           </div>
           <p className="text-[13px]" style={{ color: 'var(--text-2)' }}>
-            레시피 영상 URL을 입력하면 AI가 자동으로 레시피를 추출합니다.
+            {t.submit.inputDescription}
           </p>
           <input
             value={url}
@@ -258,9 +257,9 @@ export default function RecipeSubmitPage() {
             {(checking || analyzing) ? (
               <>
                 <Loader2 size={18} className="animate-spin" />
-                {checking ? '중복 확인 중...' : '분석 중...'}
+                {checking ? t.submit.checking : t.submit.analyzing}
               </>
-            ) : '분석하기'}
+            ) : t.submit.analyzeBtn}
           </button>
         </div>
 
@@ -277,7 +276,7 @@ export default function RecipeSubmitPage() {
             <div className="px-4 py-3 flex items-center gap-2"
                  style={{ borderBottom: '1px solid #FDE68A', background: '#FEF3C7' }}>
               <AlertTriangle size={16} color="#D97706" />
-              <p className="font-bold text-[14px]" style={{ color: '#92400E' }}>이미 등록된 영상</p>
+              <p className="font-bold text-[14px]" style={{ color: '#92400E' }}>{t.submit.duplicateTitle}</p>
             </div>
             <div className="px-4 py-4 space-y-4">
               <div className="flex items-center gap-3">
@@ -286,13 +285,13 @@ export default function RecipeSubmitPage() {
                   <p className="font-bold text-[14px]" style={{ color: 'var(--text-1)' }}>{existingById.title}</p>
                   {existingById.youtube_credit && (
                     <p className="text-[12px] mt-0.5" style={{ color: 'var(--text-3)' }}>
-                      출처: {existingById.youtube_credit}
+                      {isEn ? 'Source' : '출처'}: {existingById.youtube_credit}
                     </p>
                   )}
                 </div>
               </div>
               <p className="text-[13px]" style={{ color: '#78350F' }}>
-                이 영상의 레시피가 이미 등록되어 있습니다. AI로 다시 분석해서 레시피를 교체할 수 있습니다.
+                {t.submit.duplicateBody}
               </p>
               <div className="flex gap-2">
                 <button
@@ -302,14 +301,14 @@ export default function RecipeSubmitPage() {
                   style={{ background: '#D97706' }}
                 >
                   {analyzing ? <Loader2 size={16} className="animate-spin" /> : <RefreshCw size={16} />}
-                  레시피 교체하기
+                  {t.submit.replaceBtn}
                 </button>
                 <Link
                   href={`/recipe/${existingById.id}`}
                   className="flex-1 h-11 rounded-xl font-bold touch-manipulation flex items-center justify-center text-[14px]"
                   style={{ background: 'var(--surface)', color: 'var(--text-2)', border: '1px solid var(--border)' }}
                 >
-                  기존 레시피 보기
+                  {t.submit.viewExisting}
                 </Link>
               </div>
             </div>
@@ -322,8 +321,10 @@ export default function RecipeSubmitPage() {
                style={{ background: '#FFF7ED', color: '#92400E', border: '1px solid #FED7AA' }}>
             <AlertTriangle size={15} className="shrink-0 mt-0.5" color="#D97706" />
             <span>
-              비슷한 이름의 레시피(<b>{existingByTitle.title}</b>)가 이미 있습니다.
-              그래도 등록하면 별도 레시피로 추가됩니다.
+              {isEn
+                ? <>{t.submit.similarTitle}: <b>{existingByTitle.title}</b>. {t.submit.similarHint}</>
+                : <>비슷한 이름의 레시피(<b>{existingByTitle.title}</b>)가 이미 있습니다. {t.submit.similarHint}</>
+              }
             </span>
           </div>
         )}
@@ -337,25 +338,25 @@ export default function RecipeSubmitPage() {
                    style={{ borderColor: 'var(--border)', background: mode === 'update' ? '#FFF7ED' : '#FEF0E8' }}>
                 <p className="font-black text-[15px]"
                    style={{ color: mode === 'update' ? '#D97706' : 'var(--brand)' }}>
-                  {mode === 'update' ? '교체할 레시피 미리보기' : '분석 결과 미리보기'}
+                  {mode === 'update' ? t.submit.updatePreviewTitle : t.submit.previewTitle}
                 </p>
                 <div className="flex items-center gap-2 mt-1">
                   {dataSource === 'transcript' && (
                     <span className="text-[11px] font-bold px-2 py-0.5 rounded-full" style={{ background: '#DCFCE7', color: '#16A34A' }}>
-                      ✅ 자막 기반 — 높은 정확도
+                      {t.submit.dataSourceTranscript}
                     </span>
                   )}
                   {dataSource === 'description' && (
                     <span className="text-[11px] font-bold px-2 py-0.5 rounded-full" style={{ background: '#FEF9C3', color: '#CA8A04' }}>
-                      📄 설명란 기반 — 보통 정확도
+                      {t.submit.dataSourceDescription}
                     </span>
                   )}
                   {dataSource === 'title_only' && (
                     <span className="text-[11px] font-bold px-2 py-0.5 rounded-full" style={{ background: '#FEE2E2', color: '#DC2626' }}>
-                      ⚠️ 제목만 — 내용 확인 필요
+                      {t.submit.dataSourceTitleOnly}
                     </span>
                   )}
-                  <span className="text-[12px]" style={{ color: 'var(--text-3)' }}>수정 후 등록하세요</span>
+                  <span className="text-[12px]" style={{ color: 'var(--text-3)' }}>{t.submit.dataSourceHint}</span>
                 </div>
               </div>
 
@@ -386,7 +387,7 @@ export default function RecipeSubmitPage() {
                 />
 
                 <div className="flex items-center gap-3">
-                  <span className="text-[13px]" style={{ color: 'var(--text-2)' }}>인분</span>
+                  <span className="text-[13px]" style={{ color: 'var(--text-2)' }}>{t.submit.servingsLabel}</span>
                   <input
                     type="number"
                     min="1"
@@ -399,11 +400,11 @@ export default function RecipeSubmitPage() {
                 </div>
 
                 <div>
-                  <p className="text-[13px] font-semibold mb-2" style={{ color: 'var(--text-2)' }}>카테고리</p>
+                  <p className="text-[13px] font-semibold mb-2" style={{ color: 'var(--text-2)' }}>{t.submit.categoryLabel}</p>
                   <div className="flex gap-2">
                     {[
-                      { value: '', label: '🍳 일반 레시피' },
-                      { value: '베이킹', label: '🧁 베이킹' },
+                      { value: '', label: t.submit.categoryNormal },
+                      { value: '베이킹', label: t.submit.categoryBaking },
                     ].map(opt => (
                       <button
                         key={opt.value}
@@ -434,7 +435,7 @@ export default function RecipeSubmitPage() {
                     <div className="px-3 py-2 flex items-center gap-2" style={{ background: 'var(--bg)' }}>
                       <PlayCircle size={13} color="#DC2626" />
                       <span className="text-[12px] flex-1 truncate" style={{ color: 'var(--text-3)' }}>
-                        {recipe.youtube_credit || '출처 미확인'}
+                        {recipe.youtube_credit || t.submit.creditUnknown}
                       </span>
                       <button
                         type="button"
@@ -442,19 +443,19 @@ export default function RecipeSubmitPage() {
                         className="shrink-0 text-[11px] font-bold px-2 py-0.5 rounded-lg"
                         style={{ background: '#FEE2E2', color: '#DC2626' }}
                       >
-                        영상 제거
+                        {t.submit.videoRemove}
                       </button>
                     </div>
                   </div>
                 ) : (
                   <div className="rounded-xl px-3 py-2 text-[12px]" style={{ background: 'var(--bg)', color: 'var(--text-3)', border: '1px solid var(--border)' }}>
-                    조리 영상을 찾지 못했습니다. 유튜브 검색 링크가 대신 표시됩니다.
+                    {t.submit.videoNotFound}
                   </div>
                 )}
 
                 <div>
                   <p className="text-[13px] font-bold mb-2" style={{ color: 'var(--text-2)' }}>
-                    재료 ({recipe.ingredients.length}가지)
+                    {isEn ? `${t.submit.ingredientsLabel} (${recipe.ingredients.length})` : `재료 (${recipe.ingredients.length}가지)`}
                   </p>
                   <div className="space-y-1.5 max-h-48 overflow-y-auto">
                     {recipe.ingredients.map((ing, i) => (
@@ -463,7 +464,7 @@ export default function RecipeSubmitPage() {
                         <span style={{ color: 'var(--text-3)' }}>{ing.base_amount}{ing.unit}</span>
                         <span className="px-2 py-0.5 rounded-full text-[10px]"
                               style={{ background: ing.type === 'main' ? '#FEF0E8' : 'var(--bg)', color: 'var(--text-3)', border: '1px solid var(--border)' }}>
-                          {ing.type === 'main' ? '주재료' : ing.type === 'seasoning' ? '양념' : '고명'}
+                          {t.recipe.ingredientType[ing.type as keyof typeof t.recipe.ingredientType]}
                         </span>
                       </div>
                     ))}
@@ -472,7 +473,7 @@ export default function RecipeSubmitPage() {
 
                 <div>
                   <p className="text-[13px] font-bold mb-2" style={{ color: 'var(--text-2)' }}>
-                    조리 단계 ({recipe.steps.length}단계)
+                    {isEn ? `${t.submit.stepsLabel} (${recipe.steps.length})` : `조리 단계 (${recipe.steps.length}단계)`}
                   </p>
                   <div className="space-y-2 max-h-48 overflow-y-auto">
                     {recipe.steps.map((step, i) => (
@@ -494,8 +495,7 @@ export default function RecipeSubmitPage() {
 
             <div className="rounded-xl px-4 py-3 text-[12px]"
                  style={{ background: '#FEFCE8', color: '#854D0E', border: '1px solid #FEF08A' }}>
-              등록된 레시피는 AI가 영상 제목과 채널 정보를 참고해 독립적으로 생성한 콘텐츠입니다.
-              원본 영상 크리에이터의 권리를 존중합니다.
+              {t.submit.disclaimer}
             </div>
 
             <button
@@ -507,9 +507,9 @@ export default function RecipeSubmitPage() {
               {submitting ? (
                 <>
                   <Loader2 size={18} className="animate-spin" />
-                  {mode === 'update' ? '업데이트 중...' : '등록 중...'}
+                  {mode === 'update' ? t.submit.updating : t.submit.submitting}
                 </>
-              ) : mode === 'update' ? '레시피 교체하기' : '레시피 등록하기'}
+              ) : mode === 'update' ? t.submit.updateBtn : t.submit.submitBtn}
             </button>
           </div>
         )}

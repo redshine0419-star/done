@@ -3,6 +3,7 @@ import { useState } from 'react';
 import type { RecipeIngredient } from '@/types';
 import { useApp } from '@/context/AppContext';
 import { ingredientMatches } from '@/utils/ingredientMatch';
+import { t, isEn } from '@/i18n';
 
 interface Props {
   baseServings: number;
@@ -28,7 +29,9 @@ export function ServingsScaler({ baseServings, ingredients }: Props) {
       {/* Servings control */}
       <div className="flex items-center gap-3 rounded-2xl px-4 py-3"
            style={{ background: 'var(--brand-light)', border: '1px solid rgba(201,75,42,0.15)' }}>
-        <span className="text-sm font-semibold flex-1" style={{ color: 'var(--text-2)' }}>인분 조절</span>
+        <span className="text-sm font-semibold flex-1" style={{ color: 'var(--text-2)' }}>
+          {isEn ? 'Adjust servings' : '인분 조절'}
+        </span>
         <button
           onClick={() => setServings(s => Math.max(1, s - 1))}
           className="w-9 h-9 rounded-full flex items-center justify-center font-bold text-lg touch-manipulation"
@@ -37,7 +40,7 @@ export function ServingsScaler({ baseServings, ingredients }: Props) {
           −
         </button>
         <span className="w-16 text-center font-black text-[18px]" style={{ color: 'var(--brand)' }}>
-          {servings}인분
+          {isEn ? `${servings} ${t.recipe.servings}` : `${servings}${t.recipe.servings}`}
         </span>
         <button
           onClick={() => setServings(s => Math.min(10, s + 1))}
@@ -50,7 +53,7 @@ export function ServingsScaler({ baseServings, ingredients }: Props) {
 
       {/* Main ingredients */}
       <section>
-        <h2 className="text-[17px] font-black mb-3" style={{ color: 'var(--text-1)' }}>주재료</h2>
+        <h2 className="text-[17px] font-black mb-3" style={{ color: 'var(--text-1)' }}>{t.recipe.mainIngredients}</h2>
         <div className="grid grid-cols-2 gap-2">
           {mainIngredients.map(ing => {
             const owned = fridgeItems.length > 0 && fridgeItems.some(f => ingredientMatches(f, ing));
@@ -80,7 +83,7 @@ export function ServingsScaler({ baseServings, ingredients }: Props) {
       {/* Seasonings */}
       {seasonings.length > 0 && (
         <section>
-          <h2 className="text-[17px] font-black mb-3" style={{ color: 'var(--text-1)' }}>양념</h2>
+          <h2 className="text-[17px] font-black mb-3" style={{ color: 'var(--text-1)' }}>{t.recipe.seasonings}</h2>
           <div className="flex flex-wrap gap-2">
             {seasonings.map(ing => (
               <span key={ing.ingredient_id}

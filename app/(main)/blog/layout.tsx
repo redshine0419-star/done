@@ -1,17 +1,22 @@
 import type { Metadata } from 'next';
+import { isEn } from '@/i18n';
 
 export const metadata: Metadata = {
-  title: '블로그 — 플레이버 싱크',
-  description: '레시피·식재료·요리 과학 이야기. 요리가 더 즐거워지는 정보를 전합니다.',
+  title: isEn ? 'Blog — FlavorSync' : '블로그 — 플레이버 싱크',
+  description: isEn
+    ? 'Recipes, ingredients & the science of cooking. Tips to make cooking more enjoyable.'
+    : '레시피·식재료·요리 과학 이야기. 요리가 더 즐거워지는 정보를 전합니다.',
   openGraph: {
-    title: '블로그 — 플레이버 싱크',
-    description: '레시피·식재료·요리 과학 이야기. 요리가 더 즐거워지는 정보를 전합니다.',
+    title: isEn ? 'Blog — FlavorSync' : '블로그 — 플레이버 싱크',
+    description: isEn
+      ? 'Recipes, ingredients & the science of cooking. Tips to make cooking more enjoyable.'
+      : '레시피·식재료·요리 과학 이야기. 요리가 더 즐거워지는 정보를 전합니다.',
     type: 'website',
   },
   twitter: {
     card: 'summary',
-    title: '블로그 — 플레이버 싱크',
-    description: '레시피·식재료·요리 과학 이야기',
+    title: isEn ? 'Blog — FlavorSync' : '블로그 — 플레이버 싱크',
+    description: isEn ? 'Recipes, ingredients & the science of cooking' : '레시피·식재료·요리 과학 이야기',
   },
 };
 

@@ -3,15 +3,19 @@ import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { ArrowLeft, Clock, Users, Zap, PlayCircle, ExternalLink } from 'lucide-react';
 import { mockRecipes } from '@/data/mockRecipes';
+import { mockRecipesEn } from '@/data/mockRecipesEn';
+import { t, isEn } from '@/i18n';
 import { StartCookingButton } from './StartCookingButton';
 import { RecipeEditButton } from './RecipeEditButton';
 import { ServingsScaler } from '@/components/recipe/ServingsScaler';
 import type { Recipe } from '@/types';
 
+const mockBase = isEn ? mockRecipesEn : mockRecipes;
+
 type Params = { id: string };
 
 export function generateStaticParams() {
-  return mockRecipes.map(r => ({ id: r.id }));
+  return mockBase.map(r => ({ id: r.id }));
 }
 
 function getTotalMinutes(recipe: (typeof mockRecipes)[0]) {
@@ -21,7 +25,7 @@ function getTotalMinutes(recipe: (typeof mockRecipes)[0]) {
 }
 
 async function getRecipe(id: string): Promise<Recipe | null> {
-  const mock = mockRecipes.find(r => r.id === id);
+  const mock = mockBase.find(r => r.id === id);
   if (mock) return mock as Recipe;
   if (!process.env.DATABASE_URL) return null;
   try {
@@ -63,25 +67,29 @@ async function getRecipe(id: string): Promise<Recipe | null> {
 export async function generateMetadata({ params }: { params: Promise<Params> }): Promise<Metadata> {
   const { id } = await params;
   const recipe = await getRecipe(id);
-  if (!recipe) return { title: '레시피를 찾을 수 없어요' };
+  if (!recipe) return { title: isEn ? 'Recipe not found' : '레시피를 찾을 수 없어요' };
   const minutes = getTotalMinutes(recipe);
   const mainIngredients = recipe.ingredients.filter(i => i.type === 'main').map(i => i.name).join(', ');
-  const description = `${recipe.story} 주재료: ${mainIngredients}. 조리시간 ${minutes}분, ${recipe.servings}인분.`;
+  const appName = isEn ? 'FlavorSync' : '플레이버 싱크';
+  const recipeSuffix = isEn ? 'Recipe' : '레시피';
+  const metaSiteUrl = isEn ? 'https://en.flavorsync.me' : 'https://flavorsync.me';
   const ogImage = recipe.youtube_id
     ? `https://img.youtube.com/vi/${recipe.youtube_id}/maxresdefault.jpg`
-    : `https://flavorsync.me/recipe/${id}/opengraph-image`;
+    : `${metaSiteUrl}/recipe/${id}/opengraph-image`;
   return {
-    title: `${recipe.title} 레시피 — 플레이버 싱크`,
-    description,
+    title: `${recipe.title} ${recipeSuffix} — ${appName}`,
+    description: isEn
+      ? `${recipe.story} Main ingredients: ${mainIngredients}. ${minutes} min, serves ${recipe.servings}.`
+      : `${recipe.story} 주재료: ${mainIngredients}. 조리시간 ${minutes}분, ${recipe.servings}인분.`,
     openGraph: {
-      title: `${recipe.title} 레시피`,
+      title: `${recipe.title} ${recipeSuffix}`,
       description: recipe.story,
       type: 'article',
-      images: [{ url: ogImage, width: 1280, height: 720, alt: `${recipe.title} 레시피` }],
+      images: [{ url: ogImage, width: 1280, height: 720, alt: `${recipe.title} ${recipeSuffix}` }],
     },
     twitter: {
       card: 'summary_large_image',
-      title: `${recipe.title} 레시피`,
+      title: `${recipe.title} ${recipeSuffix}`,
       description: recipe.story,
       images: [ogImage],
     },
@@ -102,16 +110,17 @@ export default async function RecipeDetailPage({ params }: { params: Promise<Par
 
   // Resolve sub-recipe titles for combo links
   const relatedSingles = recipe.related_single_ids
-    ? recipe.related_single_ids.map(rid => mockRecipes.find(r => r.id === rid)).filter(Boolean)
+    ? recipe.related_single_ids.map(rid => mockBase.find(r => r.id === rid)).filter(Boolean)
     : [];
 
   // Resolve parent combo for single recipes
   const parentCombo = recipe.parent_combo_id
-    ? mockRecipes.find(r => r.id === recipe.parent_combo_id)
+    ? mockBase.find(r => r.id === recipe.parent_combo_id)
     : null;
 
-  const pageUrl = `https://flavorsync.me/recipe/${recipe.id}`;
-  const ogImageUrl = `https://flavorsync.me/recipe/${recipe.id}/opengraph-image`;
+  const siteUrl = isEn ? 'https://en.flavorsync.me' : 'https://flavorsync.me';
+  const pageUrl = `${siteUrl}/recipe/${recipe.id}`;
+  const ogImageUrl = `${siteUrl}/recipe/${recipe.id}/opengraph-image`;
   const images = recipe.youtube_id
     ? [
         `https://img.youtube.com/vi/${recipe.youtube_id}/maxresdefault.jpg`,
@@ -127,14 +136,14 @@ export default async function RecipeDetailPage({ params }: { params: Promise<Par
     description: recipe.story,
     image: images,
     url: pageUrl,
-    author: { '@type': 'Organization', name: '플레이버 싱크', url: 'https://flavorsync.me' },
-    publisher: { '@type': 'Organization', name: '플레이버 싱크', url: 'https://flavorsync.me' },
+    author: { '@type': 'Organization', name: isEn ? 'FlavorSync' : '플레이버 싱크', url: siteUrl },
+    publisher: { '@type': 'Organization', name: isEn ? 'FlavorSync' : '플레이버 싱크', url: siteUrl },
     totalTime: `PT${parallelMin}M`,
     prepTime: 'PT5M',
     cookTime: `PT${Math.max(parallelMin - 5, 5)}M`,
-    recipeYield: `${recipe.servings}인분`,
-    recipeCategory: recipe.isCombo ? '2구 병렬 코스 요리' : '한식',
-    recipeCuisine: '한국',
+    recipeYield: isEn ? `${recipe.servings} servings` : `${recipe.servings}인분`,
+    recipeCategory: recipe.isCombo ? t.recipe.comboLabel : (isEn ? 'Korean' : '한식'),
+    recipeCuisine: isEn ? 'Korean' : '한국',
     recipeIngredient: recipe.ingredients.map(i => `${i.name} ${i.base_amount}${i.unit}`),
     recipeInstructions: recipe.steps.map((step, i) => ({
       '@type': 'HowToStep',
@@ -144,8 +153,10 @@ export default async function RecipeDetailPage({ params }: { params: Promise<Par
       url: `${pageUrl}#step-${i + 1}`,
       image: images[0],
     })),
-    keywords: [recipe.title, '레시피', '만들기', '집밥', '한식', ...recipe.ingredients.map(i => i.name)].join(', '),
-    inLanguage: 'ko-KR',
+    keywords: isEn
+      ? [recipe.title, 'recipe', 'Korean food', ...recipe.ingredients.map(i => i.name)].join(', ')
+      : [recipe.title, '레시피', '만들기', '집밥', '한식', ...recipe.ingredients.map(i => i.name)].join(', '),
+    inLanguage: isEn ? 'en-US' : 'ko-KR',
   };
 
   return (
@@ -165,7 +176,7 @@ export default async function RecipeDetailPage({ params }: { params: Promise<Par
         {recipe.isCombo && (
           <span className="shrink-0 text-[11px] font-bold px-2.5 py-1 rounded-full"
                 style={{ background: '#F0ECFF', color: '#6B3FD4' }}>
-            2구 코스
+            {t.recipe.comboLabel}
           </span>
         )}
       </header>
@@ -185,12 +196,12 @@ export default async function RecipeDetailPage({ params }: { params: Promise<Par
             <div className="py-4 text-center" style={{ background: 'rgba(255,255,255,0.65)' }}>
               <Clock size={13} color="var(--brand)" strokeWidth={2} className="mx-auto mb-1" />
               <p className="font-black text-[22px]" style={{ color: 'var(--brand)' }}>{parallelMin}</p>
-              <p className="text-[11px] font-medium" style={{ color: 'var(--brand)' }}>분</p>
+              <p className="text-[11px] font-medium" style={{ color: 'var(--brand)' }}>{t.recipe.minutes}</p>
             </div>
             <div className="py-4 text-center" style={{ background: 'rgba(255,255,255,0.45)' }}>
               <Users size={13} color="var(--text-3)" strokeWidth={2} className="mx-auto mb-1" />
               <p className="font-black text-[22px]" style={{ color: 'var(--text-1)' }}>{recipe.servings}</p>
-              <p className="text-[11px] font-medium" style={{ color: 'var(--text-3)' }}>인분</p>
+              <p className="text-[11px] font-medium" style={{ color: 'var(--text-3)' }}>{t.recipe.servings}</p>
             </div>
             {recipe.isCombo && (
               <div className="py-4 text-center" style={{ background: 'rgba(255,255,255,0.65)' }}>
@@ -198,7 +209,7 @@ export default async function RecipeDetailPage({ params }: { params: Promise<Par
                 <p className="font-black text-[22px]" style={{ color: 'var(--green)' }}>
                   -{sequentialMin - parallelMin}
                 </p>
-                <p className="text-[11px] font-medium" style={{ color: 'var(--green)' }}>분 절약</p>
+                <p className="text-[11px] font-medium" style={{ color: 'var(--green)' }}>{t.cook.timeSaved}</p>
               </div>
             )}
           </div>
@@ -209,13 +220,15 @@ export default async function RecipeDetailPage({ params }: { params: Promise<Par
           <div className="rounded-2xl px-4 py-3 flex items-center justify-between"
                style={{ background: '#F5F2FF', border: '1px solid #D9CFFF' }}>
             <div>
-              <p className="text-[12px] font-bold" style={{ color: '#6B3FD4' }}>2구 코스에 포함된 레시피</p>
-              <p className="text-[13px] mt-0.5" style={{ color: '#8B6FD4' }}>{parentCombo.title} 코스의 구성 요리</p>
+              <p className="text-[12px] font-bold" style={{ color: '#6B3FD4' }}>{t.recipe.partOfCombo}</p>
+              <p className="text-[13px] mt-0.5" style={{ color: '#8B6FD4' }}>
+                {isEn ? `Part of ${parentCombo.title}` : `${parentCombo.title} 코스의 구성 요리`}
+              </p>
             </div>
             <Link href={`/recipe/${parentCombo.id}`}
                   className="flex items-center gap-1 px-3 py-1.5 rounded-xl text-[12px] font-bold touch-manipulation"
                   style={{ background: '#6B3FD4', color: 'white' }}>
-              코스 보기
+              {isEn ? 'View course' : '코스 보기'}
             </Link>
           </div>
         )}
@@ -226,7 +239,7 @@ export default async function RecipeDetailPage({ params }: { params: Promise<Par
         {/* Combo → sub-recipe links */}
         {relatedSingles.length > 0 && (
           <section>
-            <h2 className="text-[17px] font-black mb-3" style={{ color: 'var(--text-1)' }}>이 코스의 구성 레시피</h2>
+            <h2 className="text-[17px] font-black mb-3" style={{ color: 'var(--text-1)' }}>{t.recipe.relatedRecipes}</h2>
             <div className="space-y-2">
               {relatedSingles.map(sub => sub && (
                 <Link key={sub.id} href={`/recipe/${sub.id}`}
@@ -249,7 +262,9 @@ export default async function RecipeDetailPage({ params }: { params: Promise<Par
 
         {/* YouTube */}
         <section>
-          <h2 className="text-[17px] font-black mb-3" style={{ color: 'var(--text-1)' }}>조리 영상</h2>
+          <h2 className="text-[17px] font-black mb-3" style={{ color: 'var(--text-1)' }}>
+            {isEn ? 'Cooking Video' : '조리 영상'}
+          </h2>
           {recipe.youtube_id ? (
             <div className="space-y-2">
               <div className="relative w-full rounded-2xl overflow-hidden" style={{ paddingBottom: '56.25%', background: '#000' }}>
@@ -258,21 +273,21 @@ export default async function RecipeDetailPage({ params }: { params: Promise<Par
                   className="absolute inset-0 w-full h-full"
                   allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
                   allowFullScreen
-                  title={`${recipe.title} 조리 영상`}
+                  title={isEn ? `${recipe.title} cooking video` : `${recipe.title} 조리 영상`}
                 />
               </div>
               {recipe.youtube_credit && (
                 <div className="flex items-center gap-1.5">
                   <ExternalLink size={12} color="var(--text-3)" />
                   <p className="text-[12px]" style={{ color: 'var(--text-3)' }}>
-                    참고 영상: {recipe.youtube_credit}
+                    {t.recipe.videoCredit}: {recipe.youtube_credit}
                   </p>
                 </div>
               )}
             </div>
           ) : (
             <a
-              href={`https://www.youtube.com/results?search_query=${encodeURIComponent(recipe.title + ' 만들기 레시피')}`}
+              href={`https://www.youtube.com/results?search_query=${encodeURIComponent(recipe.title + (isEn ? ' recipe' : ' 만들기 레시피'))}`}
               target="_blank"
               rel="noopener noreferrer"
               className="flex items-center gap-4 rounded-2xl p-4 touch-manipulation"
@@ -283,9 +298,11 @@ export default async function RecipeDetailPage({ params }: { params: Promise<Par
                 <PlayCircle size={22} color="#DC2626" strokeWidth={1.8} />
               </div>
               <div>
-                <p className="font-bold text-[14px]" style={{ color: 'var(--text-1)' }}>유튜브에서 찾아보기</p>
+                <p className="font-bold text-[14px]" style={{ color: 'var(--text-1)' }}>
+                  {isEn ? 'Search on YouTube' : '유튜브에서 찾아보기'}
+                </p>
                 <p className="text-[12px] mt-0.5" style={{ color: 'var(--text-3)' }}>
-                  {recipe.title} 만들기 영상 검색
+                  {isEn ? `Search videos for "${recipe.title}"` : `${recipe.title} 만들기 영상 검색`}
                 </p>
               </div>
             </a>
@@ -294,11 +311,13 @@ export default async function RecipeDetailPage({ params }: { params: Promise<Par
 
         {/* Steps */}
         <section>
-          <h2 className="text-[17px] font-black mb-3" style={{ color: 'var(--text-1)' }}>조리 순서</h2>
+          <h2 className="text-[17px] font-black mb-3" style={{ color: 'var(--text-1)' }}>{t.recipe.steps}</h2>
           {recipe.isCombo && (
             <div className="rounded-2xl p-3 mb-4" style={{ background: '#F5F2FF', border: '1px solid #D9CFFF' }}>
-              <p className="text-[12px] font-bold" style={{ color: '#6B3FD4' }}>2구 병렬 조리</p>
-              <p className="text-[12px] mt-0.5" style={{ color: '#8B6FD4' }}>1구 화구와 2구 화구를 동시에 사용합니다</p>
+              <p className="text-[12px] font-bold" style={{ color: '#6B3FD4' }}>{t.cook.parallelCooking}</p>
+              <p className="text-[12px] mt-0.5" style={{ color: '#8B6FD4' }}>
+                {isEn ? 'Cook on both burners simultaneously' : '1구 화구와 2구 화구를 동시에 사용합니다'}
+              </p>
             </div>
           )}
           <div className="space-y-4">
@@ -315,7 +334,7 @@ export default async function RecipeDetailPage({ params }: { params: Promise<Par
                   <div className="flex items-center gap-2">
                     <p className="font-semibold text-[14px]" style={{ color: 'var(--text-1)' }}>{step.action}</p>
                     <span className="text-[12px]" style={{ color: 'var(--text-3)' }}>
-                      {Math.round(step.duration_sec / 60)}분
+                      {Math.round(step.duration_sec / 60)} {t.recipe.minutes}
                     </span>
                   </div>
                   <p className="text-[13px] mt-1 leading-relaxed" style={{ color: 'var(--text-2)' }}>

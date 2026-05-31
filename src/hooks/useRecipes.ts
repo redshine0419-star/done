@@ -1,6 +1,8 @@
 'use client';
 import { useState, useEffect, useMemo } from 'react';
 import { mockRecipes } from '@/data/mockRecipes';
+import { mockRecipesEn } from '@/data/mockRecipesEn';
+import { isEn } from '@/i18n';
 import type { Recipe } from '@/types';
 
 export function useRecipes(): Recipe[] {
@@ -16,8 +18,9 @@ export function useRecipes(): Recipe[] {
   }, []);
 
   return useMemo(() => {
-    const mockIds = new Set(mockRecipes.map(r => r.id));
+    const base = isEn ? mockRecipesEn : mockRecipes;
+    const mockIds = new Set(base.map(r => r.id));
     const extras = dbRecipes.filter(r => !mockIds.has(r.id));
-    return [...mockRecipes, ...extras];
+    return [...base, ...extras];
   }, [dbRecipes]);
 }

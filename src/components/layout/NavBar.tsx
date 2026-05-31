@@ -3,6 +3,7 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { Refrigerator, UtensilsCrossed, BookOpen } from 'lucide-react';
 import { t } from '@/i18n';
+import { LoginButton } from '@/components/auth/LoginButton';
 
 const NAV = [
   { path: '/fridge',  label: t.nav.fridge, Icon: Refrigerator },
@@ -47,6 +48,10 @@ export function NavBar() {
               </Link>
             );
           })}
+          {/* Login / profile */}
+          <div className="flex-1 flex flex-col items-center justify-center gap-1">
+            <LoginButton compact />
+          </div>
         </div>
       </nav>
 
@@ -83,7 +88,8 @@ export function NavBar() {
           })}
         </nav>
 
-        <div className="px-1 pt-4 border-t" style={{ borderColor: 'var(--border)' }}>
+        <div className="px-1 pt-4 border-t space-y-3" style={{ borderColor: 'var(--border)' }}>
+          <LoginButton />
           <p className="text-[11px]" style={{ color: 'var(--text-3)' }}>
             {t.nav.copyright}
           </p>

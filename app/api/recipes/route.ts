@@ -101,21 +101,24 @@ export async function POST(req: NextRequest) {
       thumbnail?: string;
       youtube_credit?: string;
       category?: string;
+      forked_from?: string;
+      author_id?: string;
+      author_name?: string;
       _hp?: string;
       ingredients: { ingredient_id: string; name: string; base_amount: number; unit: string; type: string }[];
       steps: { burner: number | null; action: string; duration_sec: number; description: string }[];
     };
 
     await sql`ALTER TABLE recipes ADD COLUMN IF NOT EXISTS category TEXT`.catch(() => {});
+    await sql`ALTER TABLE recipes ADD COLUMN IF NOT EXISTS author_id TEXT`.catch(() => {});
+    await sql`ALTER TABLE recipes ADD COLUMN IF NOT EXISTS author_name TEXT`.catch(() => {});
+    await sql`ALTER TABLE recipes ADD COLUMN IF NOT EXISTS forked_from TEXT`.catch(() => {});
+    await sql`ALTER TABLE recipes ADD COLUMN IF NOT EXISTS like_count INTEGER DEFAULT 0`.catch(() => {});
+    await sql`ALTER TABLE recipes ADD COLUMN IF NOT EXISTS made_count INTEGER DEFAULT 0`.catch(() => {});
 
     // Honeypot — bots fill it, humans leave it blank
     if (body._hp) {
       return NextResponse.json({ id: 'ok', status: 'published' }, { status: 201 });
-    }
-
-    // YouTube ID required
-    if (!body.youtube_id) {
-      return NextResponse.json({ error: '유튜브 영상 URL이 필요합니다.' }, { status: 400 });
     }
 
     // Minimum content
@@ -129,40 +132,54 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: '조리 단계는 최소 2개 이상 필요합니다.' }, { status: 400 });
     }
 
-    // IP-based rate limiting: max 5 per 24h
+    const isFork = Boolean(body.forked_from);
+
+    // YouTube ID required only for new youtube-based submissions (not forks)
+    if (!isFork && !body.youtube_id) {
+      return NextResponse.json({ error: '유튜브 영상 URL이 필요합니다.' }, { status: 400 });
+    }
+
+    // IP-based rate limiting for non-fork submissions
     const ip = req.headers.get('x-forwarded-for')?.split(',')[0]?.trim()
       ?? req.headers.get('x-real-ip')
       ?? 'unknown';
     const ipHash = Buffer.from(ip).toString('base64').slice(0, 20);
-    const recent = await sql`
-      SELECT COUNT(*) AS cnt FROM recipes
-      WHERE submitted_by = ${ipHash}
-        AND created_at > NOW() - INTERVAL '24 hours'
-    `;
-    if (Number(recent[0].cnt) >= 5) {
-      return NextResponse.json({ error: '하루 등록 한도(5개)를 초과했습니다. 내일 다시 시도해주세요.' }, { status: 429 });
+    if (!isFork) {
+      const recent = await sql`
+        SELECT COUNT(*) AS cnt FROM recipes
+        WHERE submitted_by = ${ipHash}
+          AND created_at > NOW() - INTERVAL '24 hours'
+      `;
+      if (Number(recent[0].cnt) >= 5) {
+        return NextResponse.json({ error: '하루 등록 한도(5개)를 초과했습니다. 내일 다시 시도해주세요.' }, { status: 429 });
+      }
+
+      // Duplicate YouTube ID check (only for youtube submissions)
+      const existing = await sql`SELECT id FROM recipes WHERE youtube_id = ${body.youtube_id} LIMIT 1`;
+      if (existing.length > 0) {
+        return NextResponse.json({ error: '이미 등록된 유튜브 영상입니다.', existing_id: existing[0].id }, { status: 409 });
+      }
     }
 
-    // Duplicate YouTube ID
-    const existing = await sql`SELECT id FROM recipes WHERE youtube_id = ${body.youtube_id} LIMIT 1`;
-    if (existing.length > 0) {
-      return NextResponse.json({ error: '이미 등록된 유튜브 영상입니다.', existing_id: existing[0].id }, { status: 409 });
-    }
-
-    const id = `db_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`;
+    const isCombo = body.steps.some(s => s.burner === 2);
+    const submittedBy = body.author_id ?? ipHash;
+    const id = `${isFork ? 'fork' : 'db'}_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`;
 
     await sql`
-      INSERT INTO recipes (id, title, story, thumbnail, is_combo, servings, youtube_id, youtube_credit, category, status, submitted_by)
+      INSERT INTO recipes (id, title, story, thumbnail, is_combo, servings, youtube_id, youtube_credit, category, forked_from, author_id, author_name, status, submitted_by)
       VALUES (
         ${id}, ${body.title}, ${body.story},
         ${body.thumbnail ?? '🍳'},
-        false,
+        ${isCombo},
         ${body.servings ?? 2},
-        ${body.youtube_id},
+        ${body.youtube_id ?? null},
         ${body.youtube_credit ?? ''},
         ${body.category ?? null},
+        ${body.forked_from ?? null},
+        ${body.author_id ?? null},
+        ${body.author_name ?? null},
         'published',
-        ${ipHash}
+        ${submittedBy}
       )
     `;
 

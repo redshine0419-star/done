@@ -66,11 +66,25 @@ export async function generateMetadata({ params }: { params: Promise<Params> }):
   if (!recipe) return { title: '레시피를 찾을 수 없어요' };
   const minutes = getTotalMinutes(recipe);
   const mainIngredients = recipe.ingredients.filter(i => i.type === 'main').map(i => i.name).join(', ');
+  const description = `${recipe.story} 주재료: ${mainIngredients}. 조리시간 ${minutes}분, ${recipe.servings}인분.`;
+  const ogImage = recipe.youtube_id
+    ? `https://img.youtube.com/vi/${recipe.youtube_id}/maxresdefault.jpg`
+    : `https://flavorsync.me/recipe/${id}/opengraph-image`;
   return {
     title: `${recipe.title} 레시피 — 플레이버 싱크`,
-    description: `${recipe.story} 주재료: ${mainIngredients}. 조리시간 ${minutes}분, ${recipe.servings}인분.`,
-    openGraph: { title: `${recipe.title} 레시피`, description: recipe.story, type: 'article' },
-    twitter: { card: 'summary', title: `${recipe.title} 레시피`, description: recipe.story },
+    description,
+    openGraph: {
+      title: `${recipe.title} 레시피`,
+      description: recipe.story,
+      type: 'article',
+      images: [{ url: ogImage, width: 1280, height: 720, alt: `${recipe.title} 레시피` }],
+    },
+    twitter: {
+      card: 'summary_large_image',
+      title: `${recipe.title} 레시피`,
+      description: recipe.story,
+      images: [ogImage],
+    },
   };
 }
 

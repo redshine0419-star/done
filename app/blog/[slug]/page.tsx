@@ -115,8 +115,24 @@ export default async function BlogPostPage({ params }: { params: Promise<Params>
   const post = await getPost(slug);
   if (!post) notFound();
 
+  const articleSchema = {
+    '@context': 'https://schema.org',
+    '@type': 'Article',
+    headline: post.title,
+    description: post.summary,
+    author: { '@type': 'Person', name: post.author },
+    publisher: { '@type': 'Organization', name: '플레이버 싱크', url: 'https://flavorsync.me' },
+    datePublished: post.published_at,
+    keywords: post.tags.join(', '),
+    url: `https://flavorsync.me/blog/${post.id}`,
+  };
+
   return (
     <div className="max-w-md mx-auto bg-white min-h-dvh">
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(articleSchema) }}
+      />
       {/* Back header */}
       <header className="sticky top-0 z-40 bg-white border-b border-gray-100 px-4 py-3 flex items-center gap-3">
         <Link href="/blog" className="text-gray-500 p-1 -ml-1 rounded-lg hover:bg-gray-100">

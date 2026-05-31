@@ -6,6 +6,12 @@ import { CategoryFilterChips } from '@/components/magazine/CategoryFilterChips';
 import { useBlogPosts } from '@/hooks/useBlogPosts';
 import type { BlogCategory, BlogPost } from '@/types';
 
+function formatDate(dateStr: string): string {
+  const d = new Date(dateStr);
+  if (isNaN(d.getTime())) return dateStr.slice(0, 10);
+  return `${d.getFullYear()}.${String(d.getMonth() + 1).padStart(2, '0')}.${String(d.getDate()).padStart(2, '0')}`;
+}
+
 function BlogCard({ post }: { post: BlogPost }) {
   return (
     <Link href={`/blog/${post.id}`} className="block">
@@ -21,10 +27,8 @@ function BlogCard({ post }: { post: BlogPost }) {
             </div>
             <h3 className="font-bold text-gray-900 text-sm leading-snug line-clamp-2">{post.title}</h3>
             <p className="text-xs text-gray-500 mt-1 line-clamp-2">{post.summary}</p>
-            <div className="flex items-center gap-2 mt-2">
-              <span className="text-xs text-gray-400">{post.author}</span>
-              <span className="text-xs text-gray-300">·</span>
-              <span className="text-xs text-gray-400">{post.published_at}</span>
+            <div className="mt-2">
+              <span className="text-xs text-gray-400">{formatDate(post.published_at)}</span>
             </div>
           </div>
         </div>

@@ -203,6 +203,7 @@ function initState(): AppState {
 interface AppContextValue {
   state: AppState;
   dispatch: React.Dispatch<AppAction>;
+  toggleFavorite: (recipeId: string) => void;
 }
 
 export const AppContext = createContext<AppContextValue | null>(null);
@@ -210,26 +211,47 @@ export const AppContext = createContext<AppContextValue | null>(null);
 export function AppProvider({ children }: { children: ReactNode }) {
   const [state, dispatch] = useReducer(reducer, undefined, initState);
   const { data: session, status } = useSession();
+  const prevUserIdRef = useRef<string | undefined>(undefined);
 
-  // Track which LS key is currently active for favorites (user-scoped when logged in)
-  const favKeyRef = useRef<string>('fs_favorites');
-
+  // On login: load favorites from DB. On logout: reset to localStorage fallback.
   useEffect(() => {
     if (status === 'loading') return;
-    const newKey = session?.user?.id ? `fs_favorites_${session.user.id}` : 'fs_favorites';
-    if (newKey !== favKeyRef.current) {
-      favKeyRef.current = newKey;
-      dispatch({ type: 'SET_FAVORITES', payload: loadFromLS<string[]>(newKey, []) });
+    const userId = session?.user?.id;
+    if (userId === prevUserIdRef.current) return;
+    prevUserIdRef.current = userId;
+
+    if (userId) {
+      fetch('/api/favorites')
+        .then(r => r.json())
+        .then((ids: string[]) => { if (Array.isArray(ids)) dispatch({ type: 'SET_FAVORITES', payload: ids }); })
+        .catch(() => {});
+    } else {
+      dispatch({ type: 'SET_FAVORITES', payload: loadFromLS<string[]>('fs_favorites', []) });
     }
   }, [status, session?.user?.id]);
+
+  // Persist favorites to localStorage only for non-logged-in users
+  useEffect(() => {
+    if (!session?.user?.id) saveToLS('fs_favorites', state.favoriteIds);
+  }, [state.favoriteIds, session?.user?.id]);
 
   useEffect(() => { saveToLS('fs_fridge', state.fridgeItems); }, [state.fridgeItems]);
   useEffect(() => { saveToLS('fs_taste', state.tasteProfile); }, [state.tasteProfile]);
   useEffect(() => { saveToLS('fs_cook_recipe', state.activeCookRecipe); }, [state.activeCookRecipe]);
   useEffect(() => { saveToLS('fs_cook_session', state.cookSession); }, [state.cookSession]);
-  useEffect(() => { saveToLS(favKeyRef.current, state.favoriteIds); }, [state.favoriteIds]);
 
-  return <AppContext.Provider value={{ state, dispatch }}>{children}</AppContext.Provider>;
+  function toggleFavorite(recipeId: string) {
+    dispatch({ type: 'TOGGLE_FAVORITE', payload: recipeId });
+    if (session?.user?.id) {
+      fetch('/api/favorites', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ recipe_id: recipeId }),
+      }).catch(() => {});
+    }
+  }
+
+  return <AppContext.Provider value={{ state, dispatch, toggleFavorite }}>{children}</AppContext.Provider>;
 }
 
 export function useApp() {

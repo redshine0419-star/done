@@ -116,7 +116,7 @@ export function AdminScreen() {
   async function handlePostEdit(id: string) {
     setPostAction(id);
     try {
-      await fetch(`/api/blog-posts/${id}`, {
+      const res = await fetch(`/api/blog-posts/${id}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json', 'x-admin-secret': secret },
         body: JSON.stringify({
@@ -128,6 +128,8 @@ export function AdminScreen() {
           tags: postEditState.tags.split(',').map(t => t.trim()).filter(Boolean),
         }),
       });
+      const data = await res.json() as { ok?: boolean; error?: string };
+      if (!data.ok) { setMessage(`❌ 수정 실패: ${data.error ?? '알 수 없는 오류'}`); return; }
       setAllPosts(prev => prev.map(p => p.id === id ? {
         ...p, title: postEditState.title, summary: postEditState.summary,
         body: postEditState.body, category: postEditState.category as BlogPost['category'],

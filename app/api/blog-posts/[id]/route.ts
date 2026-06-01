@@ -26,20 +26,30 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<Params
     tags?: string[];
     read_time?: number;
   };
-  const sql = await db();
-  await sql`
-    UPDATE blog_posts SET
-      title      = COALESCE(${body.title ?? null}, title),
-      summary    = COALESCE(${body.summary ?? null}, summary),
-      body       = COALESCE(${body.body ?? null}, body),
-      category   = COALESCE(${body.category ?? null}, category),
-      thumbnail  = COALESCE(${body.thumbnail ?? null}, thumbnail),
-      tags       = COALESCE(${body.tags ?? null}, tags),
-      read_time  = COALESCE(${body.read_time ?? null}, read_time),
-      updated_at = NOW()
-    WHERE id = ${id}
-  `;
-  return NextResponse.json({ ok: true });
+  try {
+    const sql = await db();
+    // Ensure updated_at column exists
+    await sql`ALTER TABLE blog_posts ADD COLUMN IF NOT EXISTS updated_at TIMESTAMPTZ`.catch(() => {});
+    await sql`
+      UPDATE blog_posts SET
+        title     = COALESCE(${body.title ?? null}, title),
+        summary   = COALESCE(${body.summary ?? null}, summary),
+        body      = COALESCE(${body.body ?? null}, body),
+        category  = COALESCE(${body.category ?? null}, category),
+        thumbnail = COALESCE(${body.thumbnail ?? null}, thumbnail),
+        read_time = COALESCE(${body.read_time ?? null}, read_time),
+        updated_at = NOW()
+      WHERE id = ${id}
+    `;
+    // Update tags separately (array type needs explicit cast)
+    if (body.tags) {
+      await sql`UPDATE blog_posts SET tags = ${body.tags} WHERE id = ${id}`;
+    }
+    return NextResponse.json({ ok: true });
+  } catch (err) {
+    const message = err instanceof Error ? err.message : String(err);
+    return NextResponse.json({ error: message }, { status: 500 });
+  }
 }
 
 // DELETE: remove blog post
@@ -56,7 +66,13 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<Para
   if (!isAdmin(req)) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   const { id } = await params;
   const { status } = await req.json() as { status: 'draft' | 'published' };
-  const sql = await db();
-  await sql`UPDATE blog_posts SET status = ${status}, updated_at = NOW() WHERE id = ${id}`;
-  return NextResponse.json({ ok: true });
+  try {
+    const sql = await db();
+    await sql`ALTER TABLE blog_posts ADD COLUMN IF NOT EXISTS updated_at TIMESTAMPTZ`.catch(() => {});
+    await sql`UPDATE blog_posts SET status = ${status}, updated_at = NOW() WHERE id = ${id}`;
+    return NextResponse.json({ ok: true });
+  } catch (err) {
+    const message = err instanceof Error ? err.message : String(err);
+    return NextResponse.json({ error: message }, { status: 500 });
+  }
 }

@@ -4,7 +4,6 @@ import { useSession } from 'next-auth/react';
 import type { FridgeItem, TasteProfile, Recipe, CookSession, AdjustedIngredient } from '@/types';
 import { mockFridgeItems } from '@/data/mockFridge';
 import { loadFromLS, saveToLS, migrateFridgeItemsV1 } from '@/utils/storage';
-
 interface AppState {
   fridgeItems: FridgeItem[];
   tasteProfile: TasteProfile;
@@ -28,7 +27,8 @@ type AppAction =
   | { type: 'COMPLETE_COOKING' }
   | { type: 'RESET_COOKING' }
   | { type: 'TOGGLE_FAVORITE'; payload: string }
-  | { type: 'SET_FAVORITES'; payload: string[] };
+  | { type: 'SET_FAVORITES'; payload: string[] }
+  | { type: 'SET_FRIDGE_ITEMS'; payload: FridgeItem[] };
 
 function burnerSteps(recipe: Recipe, burner: 1 | 2) {
   const allNull = recipe.steps.every(s => s.burner === null);
@@ -178,6 +178,9 @@ function reducer(state: AppState, action: AppAction): AppState {
     case 'SET_FAVORITES':
       return { ...state, favoriteIds: action.payload };
 
+    case 'SET_FRIDGE_ITEMS':
+      return { ...state, fridgeItems: action.payload };
+
     default:
       return state;
   }
@@ -213,7 +216,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const { data: session, status } = useSession();
   const prevUserIdRef = useRef<string | undefined>(undefined);
 
-  // On login: load favorites from DB. On logout: reset to localStorage fallback.
+  // On login: load favorites + fridge from DB. On logout: reset to localStorage.
   useEffect(() => {
     if (status === 'loading') return;
     const userId = session?.user?.id;
@@ -225,6 +228,10 @@ export function AppProvider({ children }: { children: ReactNode }) {
         .then(r => r.json())
         .then((ids: string[]) => { if (Array.isArray(ids)) dispatch({ type: 'SET_FAVORITES', payload: ids }); })
         .catch(() => {});
+      fetch('/api/fridge')
+        .then(r => r.json())
+        .then((items: FridgeItem[]) => { if (Array.isArray(items) && items.length > 0) dispatch({ type: 'SET_FRIDGE_ITEMS', payload: items }); })
+        .catch(() => {});
     } else {
       dispatch({ type: 'SET_FAVORITES', payload: loadFromLS<string[]>('fs_favorites', []) });
     }
@@ -235,7 +242,24 @@ export function AppProvider({ children }: { children: ReactNode }) {
     if (!session?.user?.id) saveToLS('fs_favorites', state.favoriteIds);
   }, [state.favoriteIds, session?.user?.id]);
 
-  useEffect(() => { saveToLS('fs_fridge', state.fridgeItems); }, [state.fridgeItems]);
+  // Sync fridge to DB (debounced) when logged in
+  const fridgeSyncTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  useEffect(() => {
+    if (!session?.user?.id) {
+      saveToLS('fs_fridge', state.fridgeItems);
+      return;
+    }
+    if (fridgeSyncTimer.current) clearTimeout(fridgeSyncTimer.current);
+    fridgeSyncTimer.current = setTimeout(() => {
+      fetch('/api/fridge', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ items: state.fridgeItems }),
+      }).catch(() => {});
+    }, 1500);
+    return () => { if (fridgeSyncTimer.current) clearTimeout(fridgeSyncTimer.current); };
+  }, [state.fridgeItems, session?.user?.id]);
+
   useEffect(() => { saveToLS('fs_taste', state.tasteProfile); }, [state.tasteProfile]);
   useEffect(() => { saveToLS('fs_cook_recipe', state.activeCookRecipe); }, [state.activeCookRecipe]);
   useEffect(() => { saveToLS('fs_cook_session', state.cookSession); }, [state.cookSession]);

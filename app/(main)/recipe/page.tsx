@@ -3,7 +3,7 @@ import { useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { Plus, Search, Heart, UserCircle2 } from 'lucide-react';
-import { useSession } from 'next-auth/react';
+import { useSession, signIn } from 'next-auth/react';
 import { ScreenWrapper } from '@/components/layout/ScreenWrapper';
 import { RecipeCard } from '@/components/recipes/RecipeCard';
 import { useApp } from '@/context/AppContext';
@@ -209,15 +209,13 @@ export default function RecipePage() {
             </button>
           ) : (
             <button
-              onClick={() => setFavOnly(v => !v)}
+              onClick={() => signIn('google')}
               className="w-12 h-12 flex items-center justify-center rounded-2xl shrink-0 touch-manipulation"
-              style={{
-                background: favOnly ? '#FEF2F2' : 'var(--surface)',
-                border: `1px solid ${favOnly ? '#FCA5A5' : 'var(--border)'}`,
-              }}
+              style={{ background: 'var(--surface)', border: '1px solid var(--border)' }}
+              title="Google 로그인 후 이용 가능"
               aria-label={t.recipe.favToggleLabel}
             >
-              <Heart size={18} strokeWidth={2} color={favOnly ? '#EF4444' : 'var(--text-3)'} fill={favOnly ? '#EF4444' : 'none'} />
+              <Heart size={18} strokeWidth={2} color="var(--text-3)" fill="none" />
             </button>
           )}
         </div>

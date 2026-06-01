@@ -7,6 +7,7 @@ import { IngredientCard } from '@/components/fridge/IngredientCard';
 import { AddIngredientModal } from '@/components/fridge/AddIngredientModal';
 import { QuickAddPanel } from '@/components/fridge/QuickAddPanel';
 import { Plus } from 'lucide-react';
+import { useSession, signIn } from 'next-auth/react';
 import { useApp } from '@/context/AppContext';
 import { getDaysUntilExpiry } from '@/utils/expiry';
 import { t, isEn } from '@/i18n';
@@ -14,6 +15,7 @@ import type { FridgeItem } from '@/types';
 
 export function FridgeScreen() {
   const { state, dispatch } = useApp();
+  const { data: session, status } = useSession();
   const [modalOpen, setModalOpen]   = useState(false);
   const [editItem, setEditItem]     = useState<FridgeItem | undefined>(undefined);
   const [showQuickAdd, setShowQuickAdd] = useState(true);
@@ -69,6 +71,23 @@ export function FridgeScreen() {
       action={addButton}
     >
       <div className="space-y-3">
+        {status !== 'loading' && !session && (
+          <button
+            onClick={() => signIn('google')}
+            className="w-full flex items-center gap-3 px-4 py-3 rounded-2xl text-left touch-manipulation"
+            style={{ background: '#FFF7ED', border: '1px solid #FED7AA' }}
+          >
+            <span className="text-xl shrink-0">⚠️</span>
+            <div className="flex-1">
+              <p className="text-[13px] font-bold" style={{ color: '#C2410C' }}>
+                {isEn ? 'Data may be lost without login' : '로그인하지 않으면 데이터가 사라질 수 있어요'}
+              </p>
+              <p className="text-[12px] mt-0.5" style={{ color: '#EA580C' }}>
+                {isEn ? 'Google login to save your fridge →' : 'Google 로그인하면 냉장고 데이터가 안전하게 저장됩니다 →'}
+              </p>
+            </div>
+          </button>
+        )}
         <OcrBanner />
         {!isEmpty && <ExpiryAlert items={state.fridgeItems} />}
 

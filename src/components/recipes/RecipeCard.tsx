@@ -2,6 +2,7 @@
 import { useState } from 'react';
 import Link from 'next/link';
 import { ChevronDown, Clock, Users, Zap, Check, X, ExternalLink, Heart } from 'lucide-react';
+import { useSession, signIn } from 'next-auth/react';
 import type { Recipe, FridgeItem } from '@/types';
 import { ingredientMatches } from '@/utils/ingredientMatch';
 import { useApp } from '@/context/AppContext';
@@ -51,7 +52,19 @@ function MatchRing({ rate }: { rate: number }) {
 export function RecipeCard({ recipe, fridgeItems, onStart }: Props) {
   const [open, setOpen] = useState(false);
   const { state, toggleFavorite } = useApp();
+  const { data: session } = useSession();
+  const [showLoginHint, setShowLoginHint] = useState(false);
   const isFav = state.favoriteIds.includes(recipe.id);
+
+  function handleFavClick(e: React.MouseEvent) {
+    e.stopPropagation();
+    if (!session) {
+      setShowLoginHint(true);
+      setTimeout(() => { setShowLoginHint(false); signIn('google'); }, 1500);
+      return;
+    }
+    toggleFavorite(recipe.id);
+  }
   const { parallel, sequential, savings } = getTimings(recipe);
   const match = getMatchInfo(recipe, fridgeItems);
 
@@ -116,17 +129,25 @@ export function RecipeCard({ recipe, fridgeItems, onStart }: Props) {
           </div>
         </div>
 
-        <button
-          onClick={e => { e.stopPropagation(); toggleFavorite(recipe.id); }}
-          className="shrink-0 p-1.5 rounded-full touch-manipulation"
-          aria-label={isFav ? '즐겨찾기 해제' : '즐겨찾기 추가'}
-        >
-          <Heart
-            size={18} strokeWidth={2}
-            color={isFav ? '#EF4444' : 'var(--text-3)'}
-            fill={isFav ? '#EF4444' : 'none'}
-          />
-        </button>
+        <div className="relative shrink-0">
+          {showLoginHint && (
+            <div className="absolute bottom-full right-0 mb-1 w-36 text-center text-[11px] font-semibold px-2 py-1.5 rounded-lg whitespace-nowrap z-10"
+                 style={{ background: 'var(--text-1)', color: 'white' }}>
+              Google 로그인 후 이용 가능
+            </div>
+          )}
+          <button
+            onClick={handleFavClick}
+            className="p-1.5 rounded-full touch-manipulation"
+            aria-label={isFav ? '즐겨찾기 해제' : '즐겨찾기 추가'}
+          >
+            <Heart
+              size={18} strokeWidth={2}
+              color={isFav ? '#EF4444' : 'var(--text-3)'}
+              fill={isFav ? '#EF4444' : 'none'}
+            />
+          </button>
+        </div>
         <ChevronDown
           size={18} strokeWidth={2} color="var(--text-3)"
           className={`shrink-0 transition-transform duration-200 ${open ? 'rotate-180' : ''}`}

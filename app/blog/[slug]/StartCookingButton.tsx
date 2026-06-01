@@ -1,17 +1,16 @@
 'use client';
 import { useRouter } from 'next/navigation';
 import { useApp } from '@/context/AppContext';
-import { mockRecipes } from '@/data/mockRecipes';
-import { mockRecipesEn } from '@/data/mockRecipesEn';
-import { t, isEn } from '@/i18n';
+import { useRecipes } from '@/hooks/useRecipes';
+import { t } from '@/i18n';
 
 export function StartCookingButton({ recipeId }: { recipeId: string }) {
   const { dispatch } = useApp();
   const router = useRouter();
+  const allRecipes = useRecipes();
 
   function handleStart() {
-    const base = isEn ? mockRecipesEn : mockRecipes;
-    const recipe = base.find(r => r.id === recipeId);
+    const recipe = allRecipes.find(r => r.id === recipeId);
     if (recipe) {
       dispatch({ type: 'START_COOKING', payload: recipe });
       router.push('/cook');

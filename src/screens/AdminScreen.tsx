@@ -3,7 +3,7 @@ import { useState, useEffect } from 'react';
 import { mockRecipes } from '@/data/mockRecipes';
 import type { BlogPost, Recipe } from '@/types';
 
-type Tab = 'blog' | 'recipes';
+type Tab = 'blog' | 'blog-manage' | 'recipes';
 
 interface DbRecipe extends Recipe {
   status: string;
@@ -28,6 +28,13 @@ export function AdminScreen() {
   const [generating, setGenerating] = useState<string | null>(null);
   const [drafts, setDrafts] = useState<(BlogPost & { db_id?: string })[]>([]);
   const [publishing, setPublishing] = useState<string | null>(null);
+
+  // Blog manage state
+  const [allPosts, setAllPosts] = useState<(BlogPost & { db_id: string; status: string })[]>([]);
+  const [loadingPosts, setLoadingPosts] = useState(false);
+  const [editingPostId, setEditingPostId] = useState<string | null>(null);
+  const [postEditState, setPostEditState] = useState({ title: '', summary: '', body: '', category: '', thumbnail: '', tags: '' });
+  const [postAction, setPostAction] = useState<string | null>(null);
 
   // Recipe state
   const [dbRecipes, setDbRecipes] = useState<DbRecipe[]>([]);
@@ -85,10 +92,82 @@ export function AdminScreen() {
     }
   }
 
+  async function loadAllPosts() {
+    setLoadingPosts(true);
+    try {
+      const res = await fetch('/api/blog-posts?status=all', { headers: { 'x-admin-secret': secret } });
+      const data = await res.json() as Record<string, unknown>[];
+      if (Array.isArray(data)) {
+        setAllPosts(data.map(r => ({
+          id: r.id as string, db_id: r.id as string,
+          title: r.title as string, category: r.category as BlogPost['category'],
+          thumbnail: r.thumbnail as string, summary: r.summary as string,
+          body: r.body as string, author: r.author as string,
+          published_at: r.published_at as string,
+          tags: Array.isArray(r.tags) ? r.tags as string[] : [],
+          readTime: r.readTime as number,
+          related_recipe_id: r.related_recipe_id as string | undefined,
+          status: r.status as string,
+        })));
+      }
+    } catch { /* ignore */ } finally { setLoadingPosts(false); }
+  }
+
+  async function handlePostEdit(id: string) {
+    setPostAction(id);
+    try {
+      await fetch(`/api/blog-posts/${id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json', 'x-admin-secret': secret },
+        body: JSON.stringify({
+          title: postEditState.title,
+          summary: postEditState.summary,
+          body: postEditState.body,
+          category: postEditState.category,
+          thumbnail: postEditState.thumbnail,
+          tags: postEditState.tags.split(',').map(t => t.trim()).filter(Boolean),
+        }),
+      });
+      setAllPosts(prev => prev.map(p => p.id === id ? {
+        ...p, title: postEditState.title, summary: postEditState.summary,
+        body: postEditState.body, category: postEditState.category as BlogPost['category'],
+        thumbnail: postEditState.thumbnail,
+        tags: postEditState.tags.split(',').map(t => t.trim()).filter(Boolean),
+      } : p));
+      setEditingPostId(null);
+      setMessage('✅ 블로그 수정 완료');
+    } catch (e) { setMessage(`❌ 오류: ${(e as Error).message}`); }
+    finally { setPostAction(null); }
+  }
+
+  async function handlePostDelete(id: string) {
+    if (!confirm('포스트를 삭제하시겠습니까?')) return;
+    setPostAction(id);
+    try {
+      await fetch(`/api/blog-posts/${id}`, { method: 'DELETE', headers: { 'x-admin-secret': secret } });
+      setAllPosts(prev => prev.filter(p => p.id !== id));
+      setMessage('🗑️ 포스트 삭제 완료');
+    } catch (e) { setMessage(`❌ 오류: ${(e as Error).message}`); }
+    finally { setPostAction(null); }
+  }
+
+  async function handlePostStatus(id: string, status: 'draft' | 'published') {
+    setPostAction(id);
+    try {
+      await fetch(`/api/blog-posts/${id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json', 'x-admin-secret': secret },
+        body: JSON.stringify({ status }),
+      });
+      setAllPosts(prev => prev.map(p => p.id === id ? { ...p, status } : p));
+      setMessage(`✅ 상태 변경 완료`);
+    } catch (e) { setMessage(`❌ 오류: ${(e as Error).message}`); }
+    finally { setPostAction(null); }
+  }
+
   useEffect(() => {
-    if (authed && tab === 'recipes') {
-      loadDbRecipes();
-    }
+    if (authed && tab === 'recipes') loadDbRecipes();
+    if (authed && tab === 'blog-manage') loadAllPosts();
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [authed, tab]);
 
@@ -302,23 +381,13 @@ export function AdminScreen() {
       </div>
 
       {/* Tab bar */}
-      <div className="flex gap-2 bg-gray-800 rounded-2xl p-1">
-        <button
-          onClick={() => setTab('blog')}
-          className={`flex-1 h-10 rounded-xl text-sm font-bold touch-manipulation transition-colors ${
-            tab === 'blog' ? 'bg-[#FF6B35] text-white' : 'text-gray-400'
-          }`}
-        >
-          블로그 생성
-        </button>
-        <button
-          onClick={() => setTab('recipes')}
-          className={`flex-1 h-10 rounded-xl text-sm font-bold touch-manipulation transition-colors ${
-            tab === 'recipes' ? 'bg-[#FF6B35] text-white' : 'text-gray-400'
-          }`}
-        >
-          레시피 관리
-        </button>
+      <div className="flex gap-1 bg-gray-800 rounded-2xl p-1">
+        {([['blog', '블로그 생성'], ['blog-manage', '블로그 관리'], ['recipes', '레시피 관리']] as [Tab, string][]).map(([key, label]) => (
+          <button key={key} onClick={() => setTab(key)}
+            className={`flex-1 h-10 rounded-xl text-xs font-bold touch-manipulation transition-colors ${tab === key ? 'bg-[#FF6B35] text-white' : 'text-gray-400'}`}>
+            {label}
+          </button>
+        ))}
       </div>
 
       {message && (
@@ -392,6 +461,91 @@ export function AdminScreen() {
             </code>
             <p className="text-gray-600 mt-1">※ Vercel Pro 플랜 이상에서 Cron 사용 가능</p>
           </div>
+        </div>
+      )}
+
+      {/* Blog manage tab */}
+      {tab === 'blog-manage' && (
+        <div className="space-y-3">
+          <div className="flex items-center justify-between">
+            <p className="text-sm font-bold text-gray-400 uppercase tracking-wider">전체 블로그 포스트 ({allPosts.length})</p>
+            <button onClick={loadAllPosts} className="text-xs text-orange-400 font-bold touch-manipulation">새로고침</button>
+          </div>
+
+          {loadingPosts && <div className="text-center py-8 text-gray-500 text-sm">불러오는 중...</div>}
+          {!loadingPosts && allPosts.length === 0 && (
+            <div className="text-center py-8 text-gray-600 text-sm rounded-2xl bg-gray-800">등록된 포스트가 없습니다.</div>
+          )}
+
+          {allPosts.map(post => (
+            <div key={post.id} className="bg-gray-800 rounded-2xl p-4 space-y-3">
+              {editingPostId === post.id ? (
+                <div className="space-y-2">
+                  <div className="flex gap-2">
+                    <input value={postEditState.thumbnail}
+                      onChange={e => setPostEditState(s => ({ ...s, thumbnail: e.target.value }))}
+                      className="w-12 h-10 bg-gray-700 rounded-xl px-2 text-white text-center text-xl border border-gray-600"
+                      placeholder="🍳" />
+                    <input value={postEditState.title}
+                      onChange={e => setPostEditState(s => ({ ...s, title: e.target.value }))}
+                      placeholder="제목" className="flex-1 h-10 bg-gray-700 rounded-xl px-3 text-white text-sm border border-gray-600" />
+                  </div>
+                  <input value={postEditState.category}
+                    onChange={e => setPostEditState(s => ({ ...s, category: e.target.value }))}
+                    placeholder="카테고리" className="w-full h-10 bg-gray-700 rounded-xl px-3 text-white text-sm border border-gray-600" />
+                  <textarea value={postEditState.summary}
+                    onChange={e => setPostEditState(s => ({ ...s, summary: e.target.value }))}
+                    rows={2} placeholder="요약"
+                    className="w-full bg-gray-700 rounded-xl px-3 py-2 text-white text-sm border border-gray-600 resize-none" />
+                  <textarea value={postEditState.body}
+                    onChange={e => setPostEditState(s => ({ ...s, body: e.target.value }))}
+                    rows={8} placeholder="본문 (마크다운)"
+                    className="w-full bg-gray-700 rounded-xl px-3 py-2 text-white text-sm border border-gray-600 resize-none font-mono" />
+                  <input value={postEditState.tags}
+                    onChange={e => setPostEditState(s => ({ ...s, tags: e.target.value }))}
+                    placeholder="태그 (쉼표 구분)" className="w-full h-10 bg-gray-700 rounded-xl px-3 text-white text-sm border border-gray-600" />
+                  <div className="flex gap-2">
+                    <button onClick={() => setEditingPostId(null)}
+                      className="flex-1 h-10 rounded-xl border border-gray-600 text-gray-400 text-sm touch-manipulation">취소</button>
+                    <button onClick={() => handlePostEdit(post.id)} disabled={postAction === post.id}
+                      className="flex-1 h-10 rounded-xl bg-blue-600 text-white text-sm font-bold touch-manipulation disabled:opacity-50">
+                      {postAction === post.id ? '저장 중...' : '저장'}
+                    </button>
+                  </div>
+                </div>
+              ) : (
+                <>
+                  <div className="flex items-start gap-3">
+                    <span className="text-2xl shrink-0">{post.thumbnail}</span>
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <p className="font-bold text-sm truncate">{post.title}</p>
+                        <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full shrink-0 ${
+                          post.status === 'published' ? 'bg-green-900 text-green-300' : 'bg-yellow-900 text-yellow-300'
+                        }`}>{post.status === 'published' ? '공개' : '초안'}</span>
+                      </div>
+                      <p className="text-orange-400 text-xs">{post.category}</p>
+                      <p className="text-gray-400 text-xs mt-0.5 line-clamp-2">{post.summary}</p>
+                      <p className="text-gray-600 text-xs mt-1">{String(post.published_at ?? '').slice(0, 10)}</p>
+                    </div>
+                  </div>
+                  <div className="flex gap-2">
+                    <button onClick={() => {
+                      setEditingPostId(post.id);
+                      setPostEditState({ title: post.title, summary: post.summary, body: post.body, category: post.category ?? '', thumbnail: post.thumbnail, tags: post.tags.join(', ') });
+                    }} className="flex-1 h-9 rounded-xl bg-blue-800 text-blue-200 text-xs font-bold touch-manipulation">수정</button>
+                    <button onClick={() => handlePostStatus(post.id, post.status === 'published' ? 'draft' : 'published')}
+                      disabled={postAction === post.id}
+                      className="flex-1 h-9 rounded-xl bg-gray-700 text-gray-300 text-xs font-bold touch-manipulation disabled:opacity-50">
+                      {post.status === 'published' ? '비공개' : '공개'}
+                    </button>
+                    <button onClick={() => handlePostDelete(post.id)} disabled={postAction === post.id}
+                      className="h-9 px-3 rounded-xl bg-red-900 text-red-300 text-xs font-bold touch-manipulation disabled:opacity-50">삭제</button>
+                  </div>
+                </>
+              )}
+            </div>
+          ))}
         </div>
       )}
 

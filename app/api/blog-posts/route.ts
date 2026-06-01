@@ -7,18 +7,22 @@ export async function GET(req: NextRequest) {
     const { neon } = await import('@neondatabase/serverless');
     const sql = neon(process.env.DATABASE_URL!);
 
-    const wantDrafts = req.nextUrl.searchParams.get('status') === 'draft';
-    if (wantDrafts) {
+    const statusParam = req.nextUrl.searchParams.get('status');
+    if (statusParam === 'draft' || statusParam === 'all') {
       if (req.headers.get('x-admin-secret') !== process.env.ADMIN_SECRET) {
         return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
       }
-      const rows = await sql`
-        SELECT id, title, category, thumbnail, summary, body, author,
-               published_at, tags, read_time AS "readTime", related_recipe_id
-        FROM blog_posts
-        WHERE status = 'draft'
-        ORDER BY created_at DESC
-      `;
+      const rows = statusParam === 'all'
+        ? await sql`
+            SELECT id, title, category, thumbnail, summary, body, author,
+                   published_at, tags, read_time AS "readTime", related_recipe_id, status
+            FROM blog_posts ORDER BY created_at DESC
+          `
+        : await sql`
+            SELECT id, title, category, thumbnail, summary, body, author,
+                   published_at, tags, read_time AS "readTime", related_recipe_id, status
+            FROM blog_posts WHERE status = 'draft' ORDER BY created_at DESC
+          `;
       return NextResponse.json(rows);
     }
 

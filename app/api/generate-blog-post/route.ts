@@ -352,7 +352,7 @@ export async function POST(req: NextRequest) {
         ${post.tags as string[]},
         ${post.read_time as number},
         ${recipe.id},
-        'draft',
+        'published',
         'gemini-api'
       )
       RETURNING *
@@ -391,7 +391,7 @@ export async function GET(req: NextRequest) {
       VALUES (
         ${post.title as string}, ${post.category as string}, ${post.thumbnail as string},
         ${post.summary as string}, ${post.body as string}, ${post.author as string},
-        ${post.tags as string[]}, ${post.read_time as number}, ${recipe.id}, 'draft', 'cron'
+        ${post.tags as string[]}, ${post.read_time as number}, ${recipe.id}, 'published', 'cron'
       )
     `;
     return NextResponse.json({ ok: true });

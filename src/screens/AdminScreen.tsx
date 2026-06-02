@@ -33,7 +33,7 @@ export function AdminScreen() {
   const [allPosts, setAllPosts] = useState<(BlogPost & { db_id: string; status: string })[]>([]);
   const [loadingPosts, setLoadingPosts] = useState(false);
   const [editingPostId, setEditingPostId] = useState<string | null>(null);
-  const [postEditState, setPostEditState] = useState({ title: '', summary: '', body: '', category: '', thumbnail: '', tags: '' });
+  const [postEditState, setPostEditState] = useState({ title: '', summary: '', body: '', category: '', thumbnail: '', tags: '', related_recipe_id: '' });
   const [postAction, setPostAction] = useState<string | null>(null);
 
   // Recipe state
@@ -126,6 +126,7 @@ export function AdminScreen() {
           category: postEditState.category,
           thumbnail: postEditState.thumbnail,
           tags: postEditState.tags.split(',').map(t => t.trim()).filter(Boolean),
+          related_recipe_id: postEditState.related_recipe_id || null,
         }),
       });
       const data = await res.json() as { ok?: boolean; error?: string };
@@ -506,6 +507,17 @@ export function AdminScreen() {
                   <input value={postEditState.tags}
                     onChange={e => setPostEditState(s => ({ ...s, tags: e.target.value }))}
                     placeholder="태그 (쉼표 구분)" className="w-full h-10 bg-gray-700 rounded-xl px-3 text-white text-sm border border-gray-600" />
+                  <div>
+                    <p className="text-xs text-gray-400 mb-1">관련 레시피</p>
+                    <select value={postEditState.related_recipe_id}
+                      onChange={e => setPostEditState(s => ({ ...s, related_recipe_id: e.target.value }))}
+                      className="w-full h-10 bg-gray-700 rounded-xl px-3 text-white text-sm border border-gray-600">
+                      <option value="">— 없음 —</option>
+                      {[...mockRecipes, ...dbRecipes.filter(r => !mockRecipes.find(m => m.id === r.id))].map(r => (
+                        <option key={r.id} value={r.id}>{r.thumbnail} {r.title}</option>
+                      ))}
+                    </select>
+                  </div>
                   <div className="flex gap-2">
                     <button onClick={() => setEditingPostId(null)}
                       className="flex-1 h-10 rounded-xl border border-gray-600 text-gray-400 text-sm touch-manipulation">취소</button>
@@ -534,7 +546,7 @@ export function AdminScreen() {
                   <div className="flex gap-2">
                     <button onClick={() => {
                       setEditingPostId(post.id);
-                      setPostEditState({ title: post.title, summary: post.summary, body: post.body, category: post.category ?? '', thumbnail: post.thumbnail, tags: post.tags.join(', ') });
+                      setPostEditState({ title: post.title, summary: post.summary, body: post.body, category: post.category ?? '', thumbnail: post.thumbnail, tags: post.tags.join(', '), related_recipe_id: post.related_recipe_id ?? '' });
                     }} className="flex-1 h-9 rounded-xl bg-blue-800 text-blue-200 text-xs font-bold touch-manipulation">수정</button>
                     <button onClick={() => handlePostStatus(post.id, post.status === 'published' ? 'draft' : 'published')}
                       disabled={postAction === post.id}

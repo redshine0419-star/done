@@ -25,6 +25,7 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<Params
     thumbnail?: string;
     tags?: string[];
     read_time?: number;
+    related_recipe_id?: string | null;
   };
   try {
     const sql = await db();
@@ -41,9 +42,11 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<Params
         updated_at = NOW()
       WHERE id = ${id}
     `;
-    // Update tags separately (array type needs explicit cast)
     if (body.tags) {
       await sql`UPDATE blog_posts SET tags = ${body.tags} WHERE id = ${id}`;
+    }
+    if ('related_recipe_id' in body) {
+      await sql`UPDATE blog_posts SET related_recipe_id = ${body.related_recipe_id ?? null} WHERE id = ${id}`;
     }
     return NextResponse.json({ ok: true });
   } catch (err) {

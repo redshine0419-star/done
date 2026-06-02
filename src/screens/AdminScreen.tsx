@@ -35,6 +35,7 @@ export function AdminScreen() {
   const [editingPostId, setEditingPostId] = useState<string | null>(null);
   const [postEditState, setPostEditState] = useState({ title: '', summary: '', body: '', category: '', thumbnail: '', tags: '', related_recipe_id: '' });
   const [postAction, setPostAction] = useState<string | null>(null);
+  const [fixingLinks, setFixingLinks] = useState(false);
 
   // Recipe state
   const [dbRecipes, setDbRecipes] = useState<DbRecipe[]>([]);
@@ -311,6 +312,28 @@ export function AdminScreen() {
     }
   }
 
+  async function handleFixLinks() {
+    setFixingLinks(true);
+    setMessage('');
+    try {
+      const res = await fetch('/api/admin/fix-blog-links', {
+        method: 'POST',
+        headers: { 'x-admin-secret': secret },
+      });
+      const data = await res.json() as { ok?: boolean; changed?: number; total?: number; error?: string };
+      if (data.ok) {
+        setMessage(`✅ 레시피 링크 수정 완료: 총 ${data.total}개 중 ${data.changed}개 변경됨`);
+        await loadAllPosts();
+      } else {
+        setMessage(`❌ 링크 수정 실패: ${data.error ?? '알 수 없는 오류'}`);
+      }
+    } catch (e) {
+      setMessage(`❌ 오류: ${(e as Error).message}`);
+    } finally {
+      setFixingLinks(false);
+    }
+  }
+
   async function handleAuth() {
     if (!secret) return;
     try {
@@ -472,7 +495,13 @@ export function AdminScreen() {
         <div className="space-y-3">
           <div className="flex items-center justify-between">
             <p className="text-sm font-bold text-gray-400 uppercase tracking-wider">전체 블로그 포스트 ({allPosts.length})</p>
-            <button onClick={loadAllPosts} className="text-xs text-orange-400 font-bold touch-manipulation">새로고침</button>
+            <div className="flex gap-2">
+              <button onClick={handleFixLinks} disabled={fixingLinks}
+                className="text-xs text-yellow-400 font-bold touch-manipulation disabled:opacity-50">
+                {fixingLinks ? '수정 중...' : '🔗 링크 자동수정'}
+              </button>
+              <button onClick={loadAllPosts} className="text-xs text-orange-400 font-bold touch-manipulation">새로고침</button>
+            </div>
           </div>
 
           {loadingPosts && <div className="text-center py-8 text-gray-500 text-sm">불러오는 중...</div>}

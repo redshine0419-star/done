@@ -43,6 +43,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   return (
     <html lang={isEn ? 'en' : 'ko'}>
       <body>
+        <Script src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-5240608264303390" strategy="afterInteractive" crossOrigin="anonymous" />
         <Script src="https://www.googletagmanager.com/gtag/js?id=G-L0JSVRCG0B" strategy="afterInteractive" />
         <Script id="gtag-init" strategy="afterInteractive">{`
           window.dataLayer = window.dataLayer || [];

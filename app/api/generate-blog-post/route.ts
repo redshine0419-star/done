@@ -339,6 +339,7 @@ export async function POST(req: NextRequest) {
     const post = await callGemini(prompt);
     const { neon } = await import('@neondatabase/serverless');
     const sql = neon(process.env.DATABASE_URL);
+    await sql`ALTER TABLE blog_posts ADD COLUMN IF NOT EXISTS generated_by TEXT`.catch(() => {});
     const rows = await sql`
       INSERT INTO blog_posts (title, category, thumbnail, summary, body, author, tags, read_time, related_recipe_id, status, generated_by)
       VALUES (
@@ -385,6 +386,7 @@ export async function GET(req: NextRequest) {
     const post = await callGemini(prompt);
     const { neon } = await import('@neondatabase/serverless');
     const sql = neon(process.env.DATABASE_URL!);
+    await sql`ALTER TABLE blog_posts ADD COLUMN IF NOT EXISTS generated_by TEXT`.catch(() => {});
     await sql`
       INSERT INTO blog_posts (title, category, thumbnail, summary, body, author, tags, read_time, related_recipe_id, status, generated_by)
       VALUES (

@@ -306,10 +306,20 @@ async function callGemini(prompt: string): Promise<Record<string, unknown>> {
     throw new Error(`Gemini API error (status ${res.status}): ${rawText.slice(0, 400)}`);
   }
 
-  const data = JSON.parse(rawText) as { candidates: { content: { parts: { text: string }[] } }[] };
+  let data: { candidates?: { content?: { parts?: { text?: string }[] } }[] };
+  try {
+    data = JSON.parse(rawText);
+  } catch {
+    throw new Error(`Gemini 응답 파싱 실패: ${rawText.slice(0, 400)}`);
+  }
   const text = data.candidates?.[0]?.content?.parts?.[0]?.text ?? '';
+  if (!text) throw new Error(`Gemini 응답에 텍스트 없음: ${rawText.slice(0, 400)}`);
   const cleaned = text.replace(/^```(?:json)?\s*/i, '').replace(/\s*```\s*$/i, '').trim();
-  return JSON.parse(cleaned) as Record<string, unknown>;
+  try {
+    return JSON.parse(cleaned) as Record<string, unknown>;
+  } catch {
+    throw new Error(`Gemini 결과 JSON 파싱 실패: ${cleaned.slice(0, 400)}`);
+  }
 }
 
 export async function POST(req: NextRequest) {

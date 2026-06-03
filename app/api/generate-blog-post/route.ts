@@ -348,15 +348,15 @@ export async function POST(req: NextRequest) {
     const { neon } = await import('@neondatabase/serverless');
     const sql = neon(process.env.DATABASE_URL);
     await sql`ALTER TABLE blog_posts ADD COLUMN IF NOT EXISTS generated_by TEXT`.catch(() => {});
+    await sql`ALTER TABLE blog_posts ALTER COLUMN author DROP NOT NULL`.catch(() => {});
     const rows = await sql`
-      INSERT INTO blog_posts (title, category, thumbnail, summary, body, author, tags, read_time, related_recipe_id, status, generated_by)
+      INSERT INTO blog_posts (title, category, thumbnail, summary, body, tags, read_time, related_recipe_id, status, generated_by)
       VALUES (
         ${post.title as string},
         ${post.category as string},
         ${post.thumbnail as string},
         ${post.summary as string},
         ${post.body as string},
-        ${null},
         ${post.tags as string[]},
         ${post.read_time as number},
         ${recipe.id},
@@ -407,11 +407,12 @@ export async function GET(req: NextRequest) {
     const { neon } = await import('@neondatabase/serverless');
     const sql = neon(process.env.DATABASE_URL!);
     await sql`ALTER TABLE blog_posts ADD COLUMN IF NOT EXISTS generated_by TEXT`.catch(() => {});
+    await sql`ALTER TABLE blog_posts ALTER COLUMN author DROP NOT NULL`.catch(() => {});
     await sql`
-      INSERT INTO blog_posts (title, category, thumbnail, summary, body, author, tags, read_time, related_recipe_id, status, generated_by)
+      INSERT INTO blog_posts (title, category, thumbnail, summary, body, tags, read_time, related_recipe_id, status, generated_by)
       VALUES (
         ${post.title as string}, ${post.category as string}, ${post.thumbnail as string},
-        ${post.summary as string}, ${post.body as string}, ${null},
+        ${post.summary as string}, ${post.body as string},
         ${post.tags as string[]}, ${post.read_time as number}, ${recipe.id}, 'published', 'cron'
       )
     `;

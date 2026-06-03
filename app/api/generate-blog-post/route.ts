@@ -374,8 +374,20 @@ export async function POST(req: NextRequest) {
 
 // Vercel Cron
 export async function GET(req: NextRequest) {
-  // 진단용: 인증 없이 라우트 상태 확인
   const cronAuth = req.headers.get('authorization');
+  const adminSecret = req.headers.get('x-admin-secret');
+  const isDiag = req.nextUrl.searchParams.get('diag') === '1';
+
+  // 진단용: ?diag=1 파라미터로 Gemini 연결 테스트
+  if (isDiag && adminSecret === process.env.ADMIN_SECRET) {
+    try {
+      const testPost = await callGemini(buildPrompt(CRON_RECIPES[0]));
+      return NextResponse.json({ status: 'gemini_ok', sample: testPost });
+    } catch (err) {
+      return NextResponse.json({ status: 'gemini_error', error: String(err) }, { status: 500 });
+    }
+  }
+
   if (!cronAuth) {
     return NextResponse.json({
       status: 'route_ok',

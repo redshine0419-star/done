@@ -285,7 +285,7 @@ JSON 형식으로 아래 필드를 반환하세요 (마크다운 코드블록 �
 
 async function callGemini(prompt: string): Promise<Record<string, unknown>> {
   const apiKey = process.env.GEMINI_API_KEY!;
-  const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`;
+  const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`;
 
   const res = await fetch(url, {
     method: 'POST',

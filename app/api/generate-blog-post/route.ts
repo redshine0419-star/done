@@ -277,7 +277,7 @@ JSON 형식으로 아래 필드를 반환하세요 (마크다운 코드블록 �
   "category": "${resolvedCategory}",
   "thumbnail": "레시피를 표현하는 이모지 1개",
   "summary": "포스트 요약 (80자 이내, 독자를 끌어들이는 한 줄)",
-  "body": "마크다운 본문 (400~600자, ## 헤딩 2개 이상 포함, 식품 과학 또는 문화적 배경 포함)",
+  "body": "마크다운 본문 (300자 이내, ## 헤딩 1개 포함, 핵심 내용만 간결하게)",
   "tags": ["태그1", "태그2", "태그3"],
   "read_time": 읽기 소요 분 (숫자, 3~7 사이)
 }`;
@@ -295,7 +295,7 @@ async function callGemini(prompt: string): Promise<Record<string, unknown>> {
       contents: [{ parts: [{ text: prompt }] }],
       generationConfig: {
         temperature: 0.7,
-        maxOutputTokens: 2048,
+        maxOutputTokens: 4096,
       },
     }),
   });

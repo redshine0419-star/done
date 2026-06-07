@@ -1,0 +1,108 @@
+name: AI PM Auto Blog
+
+on:
+  issues:
+    types: [opened]
+
+jobs:
+  handle-issue:
+    runs-on: ubuntu-latest
+    permissions:
+      issues: write
+    steps:
+      - name: Handle AI PM Issue
+        env:
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+          ADMIN_SECRET: ${{ secrets.ADMIN_SECRET }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          ISSUE_TITLE: ${{ github.event.issue.title }}
+          ISSUE_BODY: ${{ github.event.issue.body }}
+          ISSUE_NUMBER: ${{ github.event.issue.number }}
+          REPO: ${{ github.repository }}
+        run: |
+          python3 << 'PYEOF'
+          import os, json, re, requests
+
+          GEMINI_API_KEY = os.environ['GEMINI_API_KEY']
+          ADMIN_SECRET = os.environ.get('ADMIN_SECRET', '')
+          GITHUB_TOKEN = os.environ['GITHUB_TOKEN']
+          ISSUE_TITLE = os.environ['ISSUE_TITLE']
+          ISSUE_BODY = os.environ['ISSUE_BODY']
+          ISSUE_NUMBER = os.environ['ISSUE_NUMBER']
+          REPO = os.environ['REPO']
+
+          if '[AI PM]' not in ISSUE_TITLE:
+              print('Not an AI PM issue, skipping.')
+              exit(0)
+
+          BLOG_KEYWORDS = ['블로그', 'blog', '콘텐츠', 'content', '발행', '포스트', 'post', '글 ', '작성', '뉴스']
+          text = (ISSUE_TITLE + ' ' + ISSUE_BODY).lower()
+          is_blog = any(kw in text for kw in BLOG_KEYWORDS)
+
+          def gh_comment(body):
+              requests.post(
+                  f'https://api.github.com/repos/{REPO}/issues/{ISSUE_NUMBER}/comments',
+                  headers={'Authorization': f'Bearer {GITHUB_TOKEN}', 'Accept': 'application/vnd.github+json'},
+                  json={'body': body}
+              )
+
+          def gh_close():
+              requests.patch(
+                  f'https://api.github.com/repos/{REPO}/issues/{ISSUE_NUMBER}',
+                  headers={'Authorization': f'Bearer {GITHUB_TOKEN}', 'Accept': 'application/vnd.github+json'},
+                  json={'state': 'closed'}
+              )
+
+          def gh_label(label):
+              requests.post(
+                  f'https://api.github.com/repos/{REPO}/issues/{ISSUE_NUMBER}/labels',
+                  headers={'Authorization': f'Bearer {GITHUB_TOKEN}', 'Accept': 'application/vnd.github+json'},
+                  json={'labels': [label]}
+              )
+
+          def gemini(prompt):
+              res = requests.post(
+                  f'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key={GEMINI_API_KEY}',
+                  json={'contents': [{'parts': [{'text': prompt}]}]},
+                  headers={'Content-Type': 'application/json'},
+                  timeout=60
+              )
+              return res.json()['candidates'][0]['content']['parts'][0]['text']
+
+          if is_blog:
+              print('Blog issue detected — generating content...')
+              topic = re.sub(r'\[AI PM\]', '', ISSUE_TITLE).strip()
+
+              # Extract how many posts needed
+              count_match = re.search(r'(\d+)\s*개', ISSUE_TITLE + ISSUE_BODY)
+              count = int(count_match.group(1)) if count_match else 1
+              count = min(count, 3)  # max 3 at once
+
+              success_count = 0
+              for i in range(count):
+                  try:
+                      res = requests.post(
+                          'https://flavorsync.me/api/generate-blog-post',
+                          headers={'x-admin-secret': ADMIN_SECRET, 'Content-Type': 'application/json'},
+                          json={'topic': topic},
+                          timeout=120
+                      )
+                      if res.status_code == 200:
+                          success_count += 1
+                          print(f'Blog {i+1} published: {res.status_code}')
+                      else:
+                          print(f'Blog {i+1} failed: {res.status_code} {res.text[:200]}')
+                  except Exception as e:
+                      print(f'Blog {i+1} error: {e}')
+
+              if success_count > 0:
+                  gh_comment(f'✅ **AI PM 블로그 자동 생성 완료**\n\n- 주제: {topic}\n- 발행 완료: {success_count}/{count}개\n- 발행처: flavorsync.me/blog')
+                  gh_close()
+              else:
+                  gh_comment(f'⚠️ 블로그 생성 실패. 수동 확인이 필요합니다.\n\n주제: {topic}')
+          else:
+              print('Code issue — labeling needs-dev')
+              gh_label('needs-dev')
+              gh_comment('🔧 **코드 개발 이슈**\n\n이 이슈는 개발 작업이 필요합니다. 대시보드에서 검토 후 처리됩니다.')
+
+          PYEOF

@@ -15,6 +15,10 @@
     {
       "path": "/api/cron/push-notify",
       "schedule": "0 22 * * *"
+    },
+    {
+      "path": "/api/cron/adsense-report",
+      "schedule": "0 3 1 * *"
     }
   ]
 }

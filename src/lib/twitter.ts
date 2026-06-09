@@ -23,3 +23,7 @@ export async function postTweet(text: string): Promise<void> {
   await fetch(url, { method, headers: { Authorization: authHeader, 'Content-Type': 'application/json' }, body: JSON.stringify({ text }) }).catch(() => {});
 }
 function enc(s: string): string { return encodeURIComponent(s).replace(/[!'()*]/g, (c) => `%${c.charCodeAt(0).toString(16).toUpperCase()}`); }
+export function buildTweetText(title: string, summary: string, url: string, hashtags: string): string {
+  const base = `📝 ${title}\n\n${summary ? summary.slice(0, 80) + (summary.length > 80 ? '...' : '') + '\n\n' : ''}👉 ${url} ${hashtags}`;
+  return base.slice(0, 280);
+}

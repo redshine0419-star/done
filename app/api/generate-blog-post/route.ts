@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { postTweet, buildTweetText } from '@/lib/twitter';
 
 export const dynamic = 'force-dynamic';
 
@@ -444,6 +445,8 @@ export async function GET(req: NextRequest) {
     `;
     const saved = savedRows[0] as { id: string; title: string };
     await notifySlack(`🍳 [FlavorSync] 새 블로그 발행\n제목: ${saved.title}\n레시피: ${recipe.title}\nURL: https://flavorsync.me/blog/${saved.id}`);
+    const tweetText = buildTweetText(saved.title, recipe.story || '', `https://flavorsync.me/blog/${saved.id}`, '#레시피 #집밥 #요리');
+    await postTweet(tweetText);
     return NextResponse.json({ ok: true });
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err);

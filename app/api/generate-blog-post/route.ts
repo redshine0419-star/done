@@ -19,7 +19,7 @@ const FLAVORSYNC_CTA = `
 
 > 🍳 **더 많은 레시피와 요리 팁이 궁금하다면?**  
 > FlavorSync에서 냉장고 속 재료로 AI가 맞춤 레시피를 추천해드립니다.  
-> [→ FlavorSync 무료로 시작하기](https://flavorsync.me)
+> [→ FlavorSync 무료로 시작하기](https://flavorsync.me?utm_source=blog&utm_medium=cta&utm_campaign=organic)
 `;
 
 async function notifySlack(message: string): Promise<void> {

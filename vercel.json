@@ -3,6 +3,10 @@
     {
       "path": "/api/generate-blog-post",
       "schedule": "0 9 * * *"
+    },
+    {
+      "path": "/api/cron/gsc-optimize",
+      "schedule": "0 2 * * 1"
     }
   ]
 }

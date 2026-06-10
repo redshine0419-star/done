@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { postTweet, buildTweetText } from '@/lib/twitter';
 
 export const dynamic = 'force-dynamic';
 
@@ -10,6 +11,29 @@ interface Recipe {
   steps: { burner: number | null; action?: string; label?: string; duration_sec?: number; durationMin?: number; description?: string }[];
   servings: number;
   isCombo: boolean;
+}
+
+const FLAVORSYNC_CTA = `
+
+---
+
+> 🍳 **더 많은 레시피와 요리 팁이 궁금하다면?**  
+> FlavorSync에서 냉장고 속 재료로 AI가 맞춤 레시피를 추천해드립니다.  
+> [→ FlavorSync 무료로 시작하기](https://flavorsync.me?utm_source=blog&utm_medium=cta&utm_campaign=organic)
+`;
+
+async function notifySlack(message: string): Promise<void> {
+  const webhookUrl = process.env.SLACK_WEBHOOK_URL;
+  if (!webhookUrl) return;
+  try {
+    await fetch(webhookUrl, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ text: message }),
+    });
+  } catch {
+    // Slack 알림 실패는 무시
+  }
 }
 
 const CRON_RECIPES: Recipe[] = [
@@ -345,6 +369,7 @@ export async function POST(req: NextRequest) {
 
     const prompt = buildPrompt(recipe);
     const post = await callGemini(prompt);
+    const bodyWithCta = (post.body as string) + FLAVORSYNC_CTA;
     const { neon } = await import('@neondatabase/serverless');
     const sql = neon(process.env.DATABASE_URL);
     await sql`ALTER TABLE blog_posts ADD COLUMN IF NOT EXISTS generated_by TEXT`.catch(() => {});
@@ -356,7 +381,7 @@ export async function POST(req: NextRequest) {
         ${post.category as string},
         ${post.thumbnail as string},
         ${post.summary as string},
-        ${post.body as string},
+        ${bodyWithCta},
         ${post.tags as string[]},
         ${post.read_time as number},
         ${recipe.id},
@@ -404,18 +429,24 @@ export async function GET(req: NextRequest) {
     const recipe = CRON_RECIPES[Math.floor(Math.random() * CRON_RECIPES.length)];
     const prompt = buildPrompt(recipe);
     const post = await callGemini(prompt);
+    const bodyWithCta = (post.body as string) + FLAVORSYNC_CTA;
     const { neon } = await import('@neondatabase/serverless');
     const sql = neon(process.env.DATABASE_URL!);
     await sql`ALTER TABLE blog_posts ADD COLUMN IF NOT EXISTS generated_by TEXT`.catch(() => {});
     await sql`ALTER TABLE blog_posts ALTER COLUMN author DROP NOT NULL`.catch(() => {});
-    await sql`
+    const savedRows = await sql`
       INSERT INTO blog_posts (title, category, thumbnail, summary, body, tags, read_time, related_recipe_id, status, generated_by)
       VALUES (
         ${post.title as string}, ${post.category as string}, ${post.thumbnail as string},
-        ${post.summary as string}, ${post.body as string},
+        ${post.summary as string}, ${bodyWithCta},
         ${post.tags as string[]}, ${post.read_time as number}, ${recipe.id}, 'published', 'cron'
       )
+      RETURNING id, title
     `;
+    const saved = savedRows[0] as { id: string; title: string };
+    await notifySlack(`🍳 [FlavorSync] 새 블로그 발행\n제목: ${saved.title}\n레시피: ${recipe.title}\nURL: https://flavorsync.me/blog/${saved.id}`);
+    const tweetText = buildTweetText(saved.title, recipe.story || '', `https://flavorsync.me/blog/${saved.id}`, '#레시피 #집밥 #요리');
+    await postTweet(tweetText);
     return NextResponse.json({ ok: true });
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err);

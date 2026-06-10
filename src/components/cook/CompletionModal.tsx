@@ -9,19 +9,22 @@ interface Props {
   onClose: () => void;
 }
 
-function shareRecipe(recipeName: string) {
-  const siteUrl = isEn ? 'https://en.flavorsync.me' : 'https://flavorsync.me';
-  const text = isEn
-    ? `Just cooked "${recipeName}" with FlavorSync! 🍳\nMade from fridge ingredients → ${siteUrl}/recipe`
-    : `플레이버 싱크로 "${recipeName}" 완성! 🍳\n냉장고 재료로 오늘 저녁 해결 → ${siteUrl}/recipe`;
-  if (navigator.share) {
-    navigator.share({ text }).catch(() => {});
-  } else {
-    navigator.clipboard?.writeText(text).then(() => alert(t.cook.shareCopied)).catch(() => {});
-  }
-}
-
 export function CompletionModal({ recipeName, adjustedIngredients, onConfirm, onClose }: Props) {
+  const t = useT();
+  const isEn = useLang() === 'en';
+
+  function shareRecipe(name: string) {
+    const siteUrl = isEn ? 'https://en.flavorsync.me' : 'https://flavorsync.me';
+    const text = isEn
+      ? `Just cooked "${name}" with FlavorSync! 🍳\nMade from fridge ingredients → ${siteUrl}/recipe`
+      : `플레이버 싱크로 "${name}" 완성! 🍳\n냉장고 재료로 오늘 저녁 해결 → ${siteUrl}/recipe`;
+    if (navigator.share) {
+      navigator.share({ text }).catch(() => {});
+    } else {
+      navigator.clipboard?.writeText(text).then(() => alert(t.cook.shareCopied)).catch(() => {});
+    }
+  }
+
   return (
     <div className="fixed inset-0 z-[100] flex items-end">
       <div className="absolute inset-0 bg-black/50" onClick={onClose} />

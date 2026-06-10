@@ -20,6 +20,7 @@ function ExpiryBadge({ days }: { days: number }) {
 }
 
 export function IngredientCard({ item, onEdit, onDelete }: Props) {
+  const t = useT();
   const days = getDaysUntilExpiry(item.expire_date);
 
   return (

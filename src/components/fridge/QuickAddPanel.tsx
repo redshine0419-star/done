@@ -1,7 +1,7 @@
 'use client';
 import { useState } from 'react';
 import { useApp } from '@/context/AppContext';
-import { t, isEn } from '@/i18n';
+import { useT, useLang } from '@/i18n';
 
 type QuickItem = { emoji: string; name: string; unit: string; amount: number; category: string };
 
@@ -47,15 +47,15 @@ const QUICK_ITEMS_EN: QuickItem[] = [
   { emoji: '🧃', name: 'Soy milk',     unit: 'carton', amount: 1,   category: 'basic' },
 ];
 
-const QUICK_ITEMS = isEn ? QUICK_ITEMS_EN : QUICK_ITEMS_KO;
-
-const CATEGORIES = [
-  { key: 'meat',  label: () => t.fridge.quickCatMeat },
-  { key: 'veg',   label: () => t.fridge.quickCatVeg },
-  { key: 'basic', label: () => t.fridge.quickCatBasic },
-];
-
 export function QuickAddPanel({ onDone }: { onDone: () => void }) {
+  const t = useT();
+  const isEn = useLang() === 'en';
+  const QUICK_ITEMS = isEn ? QUICK_ITEMS_EN : QUICK_ITEMS_KO;
+  const CATEGORIES = [
+    { key: 'meat',  label: () => t.fridge.quickCatMeat },
+    { key: 'veg',   label: () => t.fridge.quickCatVeg },
+    { key: 'basic', label: () => t.fridge.quickCatBasic },
+  ];
   const { dispatch } = useApp();
   const [selected, setSelected] = useState<Set<string>>(new Set());
 

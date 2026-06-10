@@ -1,6 +1,6 @@
 'use client';
 import type { AdjustedIngredient } from '@/types';
-import { t, isEn } from '@/i18n';
+import { useT, useLang } from '@/i18n';
 
 interface Props {
   recipeName: string;

@@ -3,7 +3,7 @@ import { useState, useEffect } from 'react';
 import type { FridgeItem } from '@/types';
 import { UNITS } from '@/constants/taste';
 import { expireDateFromDays } from '@/utils/expiry';
-import { t, isEn } from '@/i18n';
+import { useT, useLang } from '@/i18n';
 
 interface Props {
   isOpen: boolean;
@@ -31,9 +31,10 @@ const QUICK_ITEMS_EN = [
   { name: 'Tofu',     icon: '⬜', unit: 'block' },
 ];
 
-const QUICK_ITEMS = isEn ? QUICK_ITEMS_EN : QUICK_ITEMS_KO;
-
 export function AddIngredientModal({ isOpen, onClose, onAdd, editItem, onEdit }: Props) {
+  const t = useT();
+  const isEn = useLang() === 'en';
+  const QUICK_ITEMS = isEn ? QUICK_ITEMS_EN : QUICK_ITEMS_KO;
   const isEditMode = Boolean(editItem);
 
   const [name, setName]             = useState('');

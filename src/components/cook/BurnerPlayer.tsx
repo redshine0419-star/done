@@ -2,7 +2,7 @@
 import { ChevronRight } from 'lucide-react';
 import type { RecipeStep } from '@/types';
 import { StepProgressBar } from './StepProgressBar';
-import { t } from '@/i18n';
+import { useT } from '@/i18n';
 
 interface Props {
   burner: 1 | 2;
@@ -23,6 +23,7 @@ function formatTime(sec: number) {
 }
 
 export function BurnerPlayer({ burner, steps, currentStepIndex, stepStartMs, pausedDuration, isRunning, onNext, isComplete }: Props) {
+  const t = useT();
   const isB1 = burner === 1;
   const accentColor = isB1 ? 'var(--brand)' : '#2563EB';
   const accentBg   = isB1 ? 'var(--brand-light)' : '#EBF2FF';

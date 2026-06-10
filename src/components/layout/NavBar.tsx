@@ -89,6 +89,11 @@ export function NavBar() {
         </nav>
 
         <div className="px-1 pt-4 border-t space-y-3" style={{ borderColor: 'var(--border)' }}>
+          <Link href="/feedback"
+            className="flex items-center gap-3 px-3 py-2.5 rounded-xl font-semibold text-[14px] transition-colors touch-manipulation"
+            style={{ color: 'var(--text-2)' }}>
+            💬 의견 보내기
+          </Link>
           <LoginButton />
           <p className="text-[11px]" style={{ color: 'var(--text-3)' }}>
             {t.nav.copyright}

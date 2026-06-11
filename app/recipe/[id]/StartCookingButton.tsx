@@ -2,17 +2,16 @@
 import { useRouter } from 'next/navigation';
 import { Flame, Zap } from 'lucide-react';
 import { useApp } from '@/context/AppContext';
-import { mockRecipes } from '@/data/mockRecipes';
-import { mockRecipesEn } from '@/data/mockRecipesEn';
+import { useRecipes } from '@/hooks/useRecipes';
 import { t, isEn } from '@/i18n';
 
 export function StartCookingButton({ recipeId, isCombo }: { recipeId: string; isCombo: boolean }) {
   const { dispatch } = useApp();
   const router = useRouter();
+  const allRecipes = useRecipes();
 
   function handleStart() {
-    const base = isEn ? mockRecipesEn : mockRecipes;
-    const recipe = base.find(r => r.id === recipeId);
+    const recipe = allRecipes.find(r => r.id === recipeId);
     if (recipe) {
       dispatch({ type: 'START_COOKING', payload: recipe });
       router.push('/cook');

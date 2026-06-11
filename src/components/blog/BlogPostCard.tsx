@@ -2,7 +2,7 @@
 import { useState } from 'react';
 import type { Recipe, FridgeItem, TasteProfile } from '@/types';
 import { InventoryChecklist } from './InventoryChecklist';
-import { useT } from '@/i18n';
+import { t } from '@/i18n';
 
 interface Props {
   recipe: Recipe;
@@ -12,7 +12,6 @@ interface Props {
 }
 
 export function BlogPostCard({ recipe, fridgeItems, tasteProfile, onStart }: Props) {
-  const t = useT();
   const [expanded, setExpanded] = useState(false);
   const totalSec = recipe.steps.filter(s => s.burner === 1 || !recipe.isCombo).reduce((a, s) => a + s.duration_sec, 0);
   const mins = Math.round(totalSec / 60);

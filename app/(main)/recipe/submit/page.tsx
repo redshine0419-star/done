@@ -3,7 +3,7 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { ArrowLeft, PlayCircle, Loader2, Check, AlertTriangle, RefreshCw } from 'lucide-react';
 import Link from 'next/link';
-import { t, isEn } from '@/i18n/shared';
+import { t, isEn } from '@/i18n';
 import type { RecipeIngredient, RecipeStep } from '@/types';
 
 interface AnalyzedRecipe {

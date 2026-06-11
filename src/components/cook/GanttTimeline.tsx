@@ -1,6 +1,6 @@
 'use client';
 import type { Recipe } from '@/types';
-import { useT } from '@/i18n';
+import { t } from '@/i18n';
 
 interface Props {
   recipe: Recipe;
@@ -20,7 +20,6 @@ function getTimings(recipe: Recipe, burner: 1 | 2) {
 }
 
 export function GanttTimeline({ recipe, b1StepIndex, b2StepIndex }: Props) {
-  const t = useT();
   const b1 = getTimings(recipe, 1);
   const b2 = getTimings(recipe, 2);
   const total = Math.max(

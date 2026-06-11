@@ -2,12 +2,11 @@
 import { AlertTriangle } from 'lucide-react';
 import type { FridgeItem } from '@/types';
 import { getDaysUntilExpiry } from '@/utils/expiry';
-import { useT } from '@/i18n';
+import { t } from '@/i18n';
 
 interface Props { items: FridgeItem[]; }
 
 export function ExpiryAlert({ items }: Props) {
-  const t = useT();
   const urgent = items
     .map(i => ({ ...i, days: getDaysUntilExpiry(i.expire_date) }))
     .filter(i => i.days <= 3)

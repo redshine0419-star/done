@@ -10,12 +10,10 @@ import { Plus } from 'lucide-react';
 import { useSession, signIn } from 'next-auth/react';
 import { useApp } from '@/context/AppContext';
 import { getDaysUntilExpiry } from '@/utils/expiry';
-import { useT, useLang } from '@/i18n';
+import { t, isEn } from '@/i18n';
 import type { FridgeItem } from '@/types';
 
 export function FridgeScreen() {
-  const t = useT();
-  const isEn = useLang() === 'en';
   const { state, dispatch } = useApp();
   const { data: session, status } = useSession();
   const [modalOpen, setModalOpen]   = useState(false);

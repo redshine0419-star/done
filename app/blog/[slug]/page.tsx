@@ -4,7 +4,7 @@ import { notFound } from 'next/navigation';
 import { mockBlogPosts } from '@/data/mockBlogPosts';
 import type { BlogPost } from '@/types';
 import { StartCookingButton } from './StartCookingButton';
-import { t, isEn } from '@/i18n/shared';
+import { t, isEn } from '@/i18n';
 
 type Params = { slug: string };
 

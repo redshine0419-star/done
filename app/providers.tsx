@@ -1,15 +1,11 @@
 'use client';
 import { SessionProvider } from 'next-auth/react';
 import { AppProvider } from '@/context/AppContext';
-import { LangProvider } from '@/components/LangProvider';
-type Locale = 'ko' | 'en';
 
-export function Providers({ lang, children }: { lang: Locale; children: React.ReactNode }) {
+export function Providers({ children }: { children: React.ReactNode }) {
   return (
     <SessionProvider>
-      <LangProvider lang={lang}>
-        <AppProvider>{children}</AppProvider>
-      </LangProvider>
+      <AppProvider>{children}</AppProvider>
     </SessionProvider>
   );
 }

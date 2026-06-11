@@ -2,11 +2,10 @@
 import { useState, useEffect, useMemo } from 'react';
 import { mockRecipes } from '@/data/mockRecipes';
 import { mockRecipesEn } from '@/data/mockRecipesEn';
-import { useLang } from '@/i18n';
+import { isEn } from '@/i18n';
 import type { Recipe } from '@/types';
 
 export function useRecipes(): Recipe[] {
-  const isEn = useLang() === 'en';
   const [dbRecipes, setDbRecipes] = useState<Recipe[]>([]);
 
   useEffect(() => {
@@ -23,5 +22,5 @@ export function useRecipes(): Recipe[] {
     const mockIds = new Set(base.map(r => r.id));
     const extras = dbRecipes.filter(r => !mockIds.has(r.id));
     return [...base, ...extras];
-  }, [dbRecipes, isEn]);
+  }, [dbRecipes]);
 }

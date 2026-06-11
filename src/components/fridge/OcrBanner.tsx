@@ -5,7 +5,7 @@ import { useApp } from '@/context/AppContext';
 import { OcrReviewModal } from '@/components/fridge/OcrReviewModal';
 import { expireDateFromDays } from '@/utils/expiry';
 import type { FridgeItem } from '@/types';
-import { useT } from '@/i18n';
+import { t } from '@/i18n';
 
 type Stage = 'idle' | 'loading' | 'review' | 'error';
 
@@ -39,7 +39,6 @@ async function compressImage(file: File): Promise<{ base64: string; mimeType: st
 }
 
 export function OcrBanner() {
-  const t = useT();
   const { dispatch } = useApp();
   const fileRef = useRef<HTMLInputElement>(null);
   const [stage, setStage] = useState<Stage>('idle');

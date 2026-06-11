@@ -5,14 +5,12 @@ import { BlogPostCard } from '@/components/blog/BlogPostCard';
 import { useApp } from '@/context/AppContext';
 import { mockRecipes } from '@/data/mockRecipes';
 import { mockRecipesEn } from '@/data/mockRecipesEn';
-import { useT, useLang } from '@/i18n';
+import { t, isEn } from '@/i18n';
 import type { Recipe } from '@/types';
 
 type Filter = 'all' | 'single' | 'combo';
 
 export function BlogScreen() {
-  const t = useT();
-  const isEn = useLang() === 'en';
   const { state, dispatch } = useApp();
   const [query, setQuery]   = useState('');
   const [filter, setFilter] = useState<Filter>('all');

@@ -2,19 +2,18 @@
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { Refrigerator, UtensilsCrossed, BookOpen } from 'lucide-react';
-import { useT } from '@/i18n';
+import { t } from '@/i18n';
 import { LoginButton } from '@/components/auth/LoginButton';
 
+const NAV = [
+  { path: '/fridge',  label: t.nav.fridge, Icon: Refrigerator },
+  { path: '/recipe',  label: t.nav.recipe, Icon: UtensilsCrossed },
+  { path: '/blog',    label: t.nav.blog, Icon: BookOpen },
+];
+
 export function NavBar() {
-  const t = useT();
   const pathname = usePathname();
   if (pathname === '/cook') return null;
-
-  const NAV = [
-    { path: '/fridge',  label: t.nav.fridge, Icon: Refrigerator },
-    { path: '/recipe',  label: t.nav.recipe, Icon: UtensilsCrossed },
-    { path: '/blog',    label: t.nav.blog, Icon: BookOpen },
-  ];
 
   return (
     <>

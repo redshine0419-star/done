@@ -1,18 +1,10 @@
-'use client';
-import { createContext, useContext } from 'react';
 import { ko } from './ko';
 import { en } from './en';
 
-export type { Locale, Translations } from './shared';
-export { locale, isEn, t, getT } from './shared';
+export type Locale = 'ko' | 'en';
 
-export const LangContext = createContext<'ko' | 'en'>('ko');
+export const locale = (process.env.NEXT_PUBLIC_LOCALE || 'ko') as Locale;
+export const isEn = locale === 'en';
+export const t = isEn ? en : ko;
 
-export function useLang(): 'ko' | 'en' {
-  return useContext(LangContext);
-}
-
-export function useT() {
-  const lang = useContext(LangContext);
-  return lang === 'en' ? en : ko;
-}
+export type { Translations } from './types';

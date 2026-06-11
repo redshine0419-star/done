@@ -1,10 +1,9 @@
 'use client';
 import { useState } from 'react';
 import { requestWakeLock, releaseWakeLock } from '@/utils/wakeLock';
-import { useT } from '@/i18n';
+import { t } from '@/i18n';
 
 export function WakeLockToggle() {
-  const t = useT();
   const [active, setActive] = useState(false);
 
   async function toggle() {

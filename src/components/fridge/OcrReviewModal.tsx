@@ -2,7 +2,7 @@
 import { useState } from 'react';
 import { expireDateFromDays } from '@/utils/expiry';
 import type { FridgeItem } from '@/types';
-import { useT } from '@/i18n';
+import { t } from '@/i18n';
 
 interface ExtractedItem {
   name: string;
@@ -18,7 +18,6 @@ interface Props {
 }
 
 export function OcrReviewModal({ items: initial, onConfirm, onClose }: Props) {
-  const t = useT();
   const [items, setItems] = useState(initial.map(i => ({ ...i, expireDays: '7' })));
 
   function remove(idx: number) {

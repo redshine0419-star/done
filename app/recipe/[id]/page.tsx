@@ -4,7 +4,7 @@ import { notFound } from 'next/navigation';
 import { ArrowLeft, Clock, Users, Zap, PlayCircle, ExternalLink } from 'lucide-react';
 import { mockRecipes } from '@/data/mockRecipes';
 import { mockRecipesEn } from '@/data/mockRecipesEn';
-import { t, isEn } from '@/i18n/shared';
+import { t, isEn } from '@/i18n';
 import { StartCookingButton } from './StartCookingButton';
 import { RecipeEditButton } from './RecipeEditButton';
 import { ServingsScaler } from '@/components/recipe/ServingsScaler';

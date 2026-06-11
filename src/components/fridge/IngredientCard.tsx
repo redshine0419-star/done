@@ -2,7 +2,7 @@
 import { Pencil, Trash2 } from 'lucide-react';
 import type { FridgeItem } from '@/types';
 import { getDaysUntilExpiry } from '@/utils/expiry';
-import { useT } from '@/i18n';
+import { t } from '@/i18n';
 
 interface Props {
   item: FridgeItem;
@@ -11,7 +11,6 @@ interface Props {
 }
 
 function ExpiryBadge({ days }: { days: number }) {
-  const t = useT();
   if (days < 0)  return <span className="text-[11px] font-bold px-2 py-0.5 rounded-full" style={{ background: 'var(--red-light)', color: 'var(--red)' }}>{t.fridge.expired}</span>;
   if (days === 0) return <span className="text-[11px] font-bold px-2 py-0.5 rounded-full" style={{ background: 'var(--red-light)', color: 'var(--red)' }}>D-DAY</span>;
   if (days <= 3)  return <span className="text-[11px] font-bold px-2 py-0.5 rounded-full" style={{ background: 'var(--amber-light)', color: 'var(--amber)' }}>D-{days}</span>;
@@ -20,7 +19,6 @@ function ExpiryBadge({ days }: { days: number }) {
 }
 
 export function IngredientCard({ item, onEdit, onDelete }: Props) {
-  const t = useT();
   const days = getDaysUntilExpiry(item.expire_date);
 
   return (

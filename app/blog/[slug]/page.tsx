@@ -84,6 +84,9 @@ function MarkdownBody({ body }: { body: string }) {
         if (line.startsWith('## ')) {
           return <h2 key={i} className="text-base font-bold text-gray-900 mt-4 pt-4 border-t border-gray-100">{line.slice(3)}</h2>;
         }
+        if (line.startsWith('> ')) {
+          return <div key={i} className="pl-3 border-l-2 border-orange-200 text-gray-600 italic"><InlineText text={line.slice(2)} /></div>;
+        }
         if (line.startsWith('- ')) {
           return (
             <li key={i} className="flex gap-2 ml-2">
@@ -100,14 +103,25 @@ function MarkdownBody({ body }: { body: string }) {
 }
 
 function InlineText({ text }: { text: string }) {
-  const parts = text.split(/(\*\*[^*]+\*\*)/g);
+  const parts = text.split(/(\*\*[^*]+\*\*|\[[^\]]+\]\([^)]+\))/g);
   return (
     <>
-      {parts.map((part, i) =>
-        part.startsWith('**') && part.endsWith('**')
-          ? <strong key={i} className="font-bold text-gray-900">{part.slice(2, -2)}</strong>
-          : <span key={i}>{part}</span>
-      )}
+      {parts.map((part, i) => {
+        if (part.startsWith('**') && part.endsWith('**')) {
+          return <strong key={i} className="font-bold text-gray-900">{part.slice(2, -2)}</strong>;
+        }
+        const linkMatch = part.match(/^\[([^\]]+)\]\(([^)]+)\)$/);
+        if (linkMatch) {
+          return (
+            <a key={i} href={linkMatch[2]} target="_blank" rel="noopener noreferrer"
+               className="inline-flex items-center gap-1 px-3 py-1.5 rounded-xl text-sm font-bold text-white no-underline"
+               style={{ background: 'var(--brand)' }}>
+              {linkMatch[1]}
+            </a>
+          );
+        }
+        return <span key={i}>{part}</span>;
+      })}
     </>
   );
 }

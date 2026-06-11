@@ -1,5 +1,5 @@
 import type { Metadata } from 'next';
-import { isEn } from '@/i18n';
+import { isEn } from '@/i18n/shared';
 
 export const metadata: Metadata = {
   title: isEn ? 'Blog — FlavorSync' : '블로그 — 플레이버 싱크',

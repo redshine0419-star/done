@@ -1,6 +1,6 @@
 import type { Metadata } from 'next';
 import { FridgeScreen } from '@/screens/FridgeScreen';
-import { isEn } from '@/i18n';
+import { isEn } from '@/i18n/shared';
 
 export const metadata: Metadata = {
   title: isEn ? 'Smart Fridge — FlavorSync' : '스마트 냉장고 — 플레이버 싱크',

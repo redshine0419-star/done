@@ -10,7 +10,7 @@ import { useApp } from '@/context/AppContext';
 import { useRecipes } from '@/hooks/useRecipes';
 import { getMatchRate } from '@/utils/ingredientMatch';
 import { getDaysUntilExpiry } from '@/utils/expiry';
-import { t, isEn } from '@/i18n';
+import { t, isEn } from '@/i18n/shared';
 import type { Recipe } from '@/types';
 
 type Filter = 'all' | 'single' | 'combo' | 'baking';

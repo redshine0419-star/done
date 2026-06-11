@@ -4,7 +4,7 @@ import Link from 'next/link';
 import { ScreenWrapper } from '@/components/layout/ScreenWrapper';
 import { CategoryFilterChips } from '@/components/magazine/CategoryFilterChips';
 import { useBlogPosts } from '@/hooks/useBlogPosts';
-import { t, isEn } from '@/i18n';
+import { t, isEn } from '@/i18n/shared';
 import type { BlogCategory, BlogPost } from '@/types';
 
 function formatDate(dateStr: string): string {

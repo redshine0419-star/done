@@ -2,7 +2,7 @@ import type { Metadata } from 'next';
 import { headers } from 'next/headers';
 import Script from 'next/script';
 import { Providers } from './providers';
-import { getT, type Locale } from '@/i18n';
+type Locale = 'ko' | 'en';
 import './globals.css';
 
 export async function generateMetadata(): Promise<Metadata> {

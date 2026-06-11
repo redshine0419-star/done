@@ -2,7 +2,7 @@
 import { SessionProvider } from 'next-auth/react';
 import { AppProvider } from '@/context/AppContext';
 import { LangProvider } from '@/components/LangProvider';
-import type { Locale } from '@/i18n';
+type Locale = 'ko' | 'en';
 
 export function Providers({ lang, children }: { lang: Locale; children: React.ReactNode }) {
   return (

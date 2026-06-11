@@ -1,4 +1,3 @@
-'use client';
 import { createContext, useContext } from 'react';
 import { ko } from './ko';
 import { en } from './en';

@@ -11,8 +11,10 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     { url: base,             lastModified: now, changeFrequency: 'weekly',  priority: 1.0 },
     { url: `${base}/recipe`, lastModified: now, changeFrequency: 'daily',   priority: 0.9 },
     { url: `${base}/blog`,   lastModified: now, changeFrequency: 'daily',   priority: 0.8 },
-    { url: `${base}/fridge`, lastModified: now, changeFrequency: 'monthly', priority: 0.4 },
-    { url: `${base}/taste`,  lastModified: now, changeFrequency: 'monthly', priority: 0.4 },
+    { url: `${base}/cook`,     lastModified: now, changeFrequency: 'monthly', priority: 0.6 },
+    { url: `${base}/fridge`,   lastModified: now, changeFrequency: 'monthly', priority: 0.4 },
+    { url: `${base}/taste`,    lastModified: now, changeFrequency: 'monthly', priority: 0.4 },
+    { url: `${base}/feedback`, lastModified: now, changeFrequency: 'monthly', priority: 0.5 },
   ];
 
   const mockRecipeRoutes: MetadataRoute.Sitemap = mockRecipes.map(r => ({

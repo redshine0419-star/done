@@ -3,7 +3,7 @@ import { useState } from 'react';
 import type { RecipeIngredient } from '@/types';
 import { useApp } from '@/context/AppContext';
 import { ingredientMatches } from '@/utils/ingredientMatch';
-import { t, isEn } from '@/i18n';
+import { useT, useLang } from '@/i18n';
 
 interface Props {
   baseServings: number;
@@ -16,6 +16,8 @@ function formatAmount(val: number): string {
 }
 
 export function ServingsScaler({ baseServings, ingredients }: Props) {
+  const t = useT();
+  const isEn = useLang() === 'en';
   const [servings, setServings] = useState(baseServings);
   const { state } = useApp();
   const { fridgeItems } = state;

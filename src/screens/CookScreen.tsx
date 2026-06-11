@@ -11,10 +11,11 @@ import { Pause, Play, X } from 'lucide-react';
 import { useApp } from '@/context/AppContext';
 import { useCookTimer } from '@/hooks/useTimer';
 import { adjustedAmount, dominantTasteLevel } from '@/utils/tasteMatrix';
-import { t } from '@/i18n';
+import { useT } from '@/i18n';
 import type { AdjustedIngredient, VoiceCommand } from '@/types';
 
 export function CookScreen() {
+  const t = useT();
   const { state, dispatch } = useApp();
   const { activeCookRecipe: recipe, cookSession: cs, tasteProfile } = state;
   const [showComplete, setShowComplete] = useState(false);

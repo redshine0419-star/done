@@ -2,13 +2,14 @@
 import { useState } from 'react';
 import type { VoiceCommand } from '@/types';
 import { simulateVoiceRecognition } from '@/utils/speechSim';
-import { t } from '@/i18n';
+import { useT } from '@/i18n';
 
 interface Props {
   onCommand: (cmd: VoiceCommand) => void;
 }
 
 export function VoiceControlSim({ onCommand }: Props) {
+  const t = useT();
   const [listening, setListening] = useState(false);
   const [transcript, setTranscript] = useState('');
 

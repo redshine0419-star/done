@@ -2,7 +2,7 @@
 import type { Recipe, FridgeItem, TasteProfile } from '@/types';
 import { adjustedAmount, dominantTasteLevel } from '@/utils/tasteMatrix';
 import { ingredientMatches } from '@/utils/ingredientMatch';
-import { t, isEn } from '@/i18n';
+import { useT, useLang } from '@/i18n';
 
 interface Props {
   recipe: Recipe;
@@ -11,6 +11,8 @@ interface Props {
 }
 
 export function InventoryChecklist({ recipe, fridgeItems, tasteProfile }: Props) {
+  const t = useT();
+  const isEn = useLang() === 'en';
   return (
     <div className="bg-gray-50 rounded-2xl p-4 space-y-2">
       <p className="text-sm font-bold text-gray-700 mb-3">{t.blog.inventory}</p>

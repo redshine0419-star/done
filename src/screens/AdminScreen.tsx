@@ -56,38 +56,6 @@ export function AdminScreen() {
     }
   }
 
-  async function loadDrafts(currentSecret?: string) {
-    const s = currentSecret ?? secret;
-    try {
-      const res = await fetch('/api/blog-posts?status=draft', {
-        headers: { 'x-admin-secret': s },
-      });
-      if (!res.ok) {
-        setMessage(`❌ draft 로드 실패 (${res.status})`);
-        return;
-      }
-      const rows = await res.json() as (Record<string, unknown>)[];
-      if (!Array.isArray(rows)) return;
-      const loaded: (BlogPost & { db_id: string })[] = rows.map(r => ({
-        id: r.id as string,
-        db_id: r.id as string,
-        title: r.title as string,
-        category: r.category as BlogPost['category'],
-        thumbnail: r.thumbnail as string,
-        summary: r.summary as string,
-        body: r.body as string,
-        author: r.author as string,
-        published_at: r.published_at as string,
-        tags: r.tags as string[],
-        readTime: r.readTime as number,
-        related_recipe_id: r.related_recipe_id as string | undefined,
-      }));
-      setDrafts(loaded);
-    } catch (err) {
-      setMessage(`❌ draft 로드 오류: ${err instanceof Error ? err.message : String(err)}`);
-    }
-  }
-
   async function loadAllPosts() {
     setLoadingPosts(true);
     try {
@@ -271,30 +239,12 @@ export function AdminScreen() {
   async function handleAuth() {
     if (!secret) return;
     try {
-      const res = await fetch('/api/blog-posts?status=draft', {
+      const res = await fetch('/api/blog-posts?status=all', {
         headers: { 'x-admin-secret': secret },
       });
       if (res.status === 401) {
         setMessage('❌ 비밀번호가 틀렸습니다');
         return;
-      }
-      const rows = await res.json() as (Record<string, unknown>)[];
-      if (Array.isArray(rows)) {
-        const loaded: (BlogPost & { db_id: string })[] = rows.map(r => ({
-          id: r.id as string,
-          db_id: r.id as string,
-          title: r.title as string,
-          category: r.category as BlogPost['category'],
-          thumbnail: r.thumbnail as string,
-          summary: r.summary as string,
-          body: r.body as string,
-          author: r.author as string,
-          published_at: r.published_at as string,
-          tags: r.tags as string[],
-          readTime: r.readTime as number,
-          related_recipe_id: r.related_recipe_id as string | undefined,
-        }));
-        setDrafts(loaded);
       }
       setAuthed(true);
     } catch {

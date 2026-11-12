@@ -1,6 +1,7 @@
 'use client';
 import { useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
+import Link from 'next/link';
 import { Search, Heart, UserCircle2 } from 'lucide-react';
 import { useSession, signIn } from 'next-auth/react';
 import { ScreenWrapper } from '@/components/layout/ScreenWrapper';

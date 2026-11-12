@@ -1,7 +1,6 @@
 'use client';
 import { useState } from 'react';
 import { ScreenWrapper } from '@/components/layout/ScreenWrapper';
-import { OcrBanner } from '@/components/fridge/OcrBanner';
 import { ExpiryAlert } from '@/components/fridge/ExpiryAlert';
 import { IngredientCard } from '@/components/fridge/IngredientCard';
 import { AddIngredientModal } from '@/components/fridge/AddIngredientModal';
@@ -88,7 +87,6 @@ export function FridgeScreen() {
             </div>
           </button>
         )}
-        <OcrBanner />
         {!isEmpty && <ExpiryAlert items={state.fridgeItems} />}
 
         {isEmpty ? (

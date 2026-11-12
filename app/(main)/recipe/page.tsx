@@ -1,8 +1,7 @@
 'use client';
 import { useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import Link from 'next/link';
-import { Plus, Search, Heart, UserCircle2 } from 'lucide-react';
+import { Search, Heart, UserCircle2 } from 'lucide-react';
 import { useSession, signIn } from 'next-auth/react';
 import { ScreenWrapper } from '@/components/layout/ScreenWrapper';
 import { RecipeCard } from '@/components/recipes/RecipeCard';
@@ -80,16 +79,8 @@ export default function RecipePage() {
       : `지금 바로 만들 수 있는 레시피 ${canMakeNow}개`
     : t.recipe.pageSubtitle;
 
-  const addButton = (
-    <Link href="/recipe/submit"
-          className="w-9 h-9 flex items-center justify-center rounded-xl touch-manipulation"
-          style={{ background: 'var(--brand-light)' }}>
-      <Plus size={18} color="var(--brand)" strokeWidth={2.5} />
-    </Link>
-  );
-
   return (
-    <ScreenWrapper title={t.recipe.pageTitle} subtitle={subtitle} action={addButton}>
+    <ScreenWrapper title={t.recipe.pageTitle} subtitle={subtitle}>
       <div className="space-y-4">
 
         {/* Stats row */}
